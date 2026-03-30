@@ -125,3 +125,73 @@ ON DUPLICATE KEY UPDATE
     seo_title = VALUES(seo_title),
     seo_description = VALUES(seo_description),
     status = VALUES(status);
+
+INSERT INTO articles (
+    category_id,
+    author_id,
+    title,
+    slug,
+    excerpt,
+    content,
+    image,
+    image_alt,
+    meta_title,
+    meta_description,
+    status,
+    published_at
+)
+VALUES
+    (
+        1,
+        1,
+        'Chronologie courte du conflit Iran Irak',
+        'chronologie-courte-conflit-iran-irak',
+        'Repere rapide des principales phases politiques et militaires du conflit.',
+        '<h2>Contexte initial</h2><p>Le conflit evolue par cycles avec des periodes offensives puis defensives.</p><blockquote>La duree du conflit transforme les objectifs initiaux en logique dattrition.</blockquote><ul><li>Phase 1: escalation frontaliere</li><li>Phase 2: guerre de position</li><li>Phase 3: pression diplomatique</li></ul>',
+        NULL,
+        'Carte simplifiee de la chronologie du conflit',
+        'Chronologie du conflit Iran Irak',
+        'Resume chronologique et points de bascule de la guerre Iran Irak.',
+        'published',
+        '2024-05-10 09:00:00'
+    ),
+    (
+        2,
+        1,
+        'Routes energetiques et enjeux regionaux',
+        'routes-energetiques-enjeux-regionaux',
+        'Lecture geopolitique des routes maritimes et de la securite energetique.',
+        '<h2>Axes strategiques</h2><p>Les couloirs maritimes deviennent des points de tension permanents.</p><blockquote>Controler les flux energetiques influence directement le rapport de force diplomatique.</blockquote><ul><li>Detroits sensibles</li><li>Assurance et cout du transport</li><li>Effets sur les partenaires regionaux</li></ul>',
+        NULL,
+        'Navire cargo sur route energetique regionale',
+        'Routes energetiques et geopolitique',
+        'Analyse des routes energetiques et des impacts regionaux pendant la guerre.',
+        'published',
+        '2024-07-22 14:30:00'
+    ),
+    (
+        3,
+        1,
+        'Doctrine operationnelle et adaptation tactique',
+        'doctrine-operationnelle-adaptation-tactique',
+        'Comment les forces adaptent doctrine, logistique et rythme des operations.',
+        '<h2>Evolution tactique</h2><p>Les commandements ajustent progressivement leurs modes daction face a la duree du conflit.</p><blockquote>Ladaptation logistique est aussi decisive que la manoeuvre sur le terrain.</blockquote><ul><li>Rotation des unites</li><li>Priorite au ravitaillement</li><li>Integration du renseignement</li></ul>',
+        NULL,
+        'Unite en deplacement avec soutien logistique',
+        'Doctrine militaire et adaptation tactique',
+        'Panorama des ajustements tactiques et operationnels observes dans le conflit.',
+        'published',
+        '2024-10-03 08:15:00'
+    )
+ON DUPLICATE KEY UPDATE
+    category_id = VALUES(category_id),
+    author_id = VALUES(author_id),
+    title = VALUES(title),
+    excerpt = VALUES(excerpt),
+    content = VALUES(content),
+    image = VALUES(image),
+    image_alt = VALUES(image_alt),
+    meta_title = VALUES(meta_title),
+    meta_description = VALUES(meta_description),
+    status = VALUES(status),
+    published_at = VALUES(published_at);

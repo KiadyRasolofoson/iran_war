@@ -82,6 +82,7 @@ final class ArticleController
     public function store(): void
     {
         $this->assertPostWithCsrf();
+        $publishAndView = (string) ($_POST['submit_action'] ?? '') === 'publish_and_view';
 
         $input = $this->collectInput($_POST);
         $validation = $this->validateInput($input, null);
@@ -113,7 +114,22 @@ final class ArticleController
             $this->redirect('/admin/articles/create');
         }
 
+        if ($publishAndView) {
+            $payload['status'] = 'published';
+            $payload['published_at'] = date('Y-m-d H:i:s');
+        }
+
         $createdId = $this->articleModel->create($payload);
+
+        if ($publishAndView) {
+            $slug = $this->resolveArticleSlug($createdId, (string) ($payload['slug'] ?? ''));
+            if ($slug !== null) {
+                $this->redirect('/article/' . rawurlencode($slug));
+            }
+
+            $this->flash('error', 'Article was published but the front URL could not be resolved.');
+            $this->redirect('/admin/articles/' . $createdId . '/edit');
+        }
 
         $this->flash('success', 'Article created (ID: ' . $createdId . ').');
         $this->redirect('/admin/articles');
@@ -144,6 +160,7 @@ final class ArticleController
     public function update($id): void
     {
         $this->assertPostWithCsrf();
+        $publishAndView = (string) ($_POST['submit_action'] ?? '') === 'publish_and_view';
 
         $articleId = (int) $id;
         $article = $this->articleModel->findById($articleId);
@@ -177,7 +194,26 @@ final class ArticleController
             }
         }
 
+        if ($publishAndView) {
+            $payload['status'] = 'published';
+            $payload['published_at'] = date('Y-m-d H:i:s');
+        }
+
         $updated = $this->articleModel->update($articleId, $payload);
+
+        if ($publishAndView) {
+            $slug = $this->resolveArticleSlug(
+                $articleId,
+                (string) ($payload['slug'] ?? ($article['slug'] ?? ''))
+            );
+
+            if ($slug !== null) {
+                $this->redirect('/article/' . rawurlencode($slug));
+            }
+
+            $this->flash('error', 'Article was published but the front URL could not be resolved.');
+            $this->redirect('/admin/articles/' . $articleId . '/edit');
+        }
 
         if ($updated) {
             $this->flash('success', 'Article updated successfully.');
@@ -273,7 +309,7 @@ final class ArticleController
             $slug = $this->buildUniqueSlug($slug, $articleId);
         }
 
-        $content = $input['content'];
+        $content = $this->sanitizeContentHtml($input['content']);
         if ($content === '') {
             $errors['content'] = 'Content is required.';
         }
@@ -334,6 +370,361 @@ final class ArticleController
         ];
     }
 
+    private function sanitizeContentHtml(string $html): string
+    {
+        $html = trim($html);
+        if ($html === '') {
+            return '';
+        }
+
+        if (!class_exists(\DOMDocument::class)) {
+            return $this->sanitizeContentHtmlFallback($html);
+        }
+
+        $dom = new \DOMDocument('1.0', 'UTF-8');
+
+        $previousLibxmlState = libxml_use_internal_errors(true);
+        $loaded = $dom->loadHTML(
+            '<?xml encoding="utf-8" ?><div id="content-root">' . $html . '</div>',
+            LIBXML_HTML_NOIMPLIED | LIBXML_HTML_NODEFDTD
+        );
+        libxml_clear_errors();
+        libxml_use_internal_errors($previousLibxmlState);
+
+        if (!$loaded) {
+            return $this->sanitizeContentHtmlFallback($html);
+        }
+
+        $root = $dom->getElementById('content-root');
+        if (!$root instanceof \DOMElement) {
+            return $this->sanitizeContentHtmlFallback($html);
+        }
+
+        $this->sanitizeContentNodeTree($root);
+
+        $sanitized = '';
+        $child = $root->firstChild;
+        while ($child !== null) {
+            $sanitized .= (string) $dom->saveHTML($child);
+            $child = $child->nextSibling;
+        }
+
+        return trim($sanitized);
+    }
+
+    private function sanitizeContentNodeTree(\DOMNode $parent): void
+    {
+        $child = $parent->firstChild;
+
+        while ($child !== null) {
+            $next = $child->nextSibling;
+
+            if ($child instanceof \DOMComment) {
+                $parent->removeChild($child);
+                $child = $next;
+                continue;
+            }
+
+            if ($child instanceof \DOMElement) {
+                $this->sanitizeContentElement($child);
+            }
+
+            $child = $next;
+        }
+    }
+
+    private function sanitizeContentElement(\DOMElement $element): void
+    {
+        $tagName = strtolower($element->tagName);
+        $dangerousTags = [
+            'script', 'style', 'iframe', 'object', 'embed', 'applet', 'link', 'meta', 'base', 'form',
+            'input', 'button', 'textarea', 'select', 'option', 'noscript', 'svg', 'math',
+        ];
+
+        if (in_array($tagName, $dangerousTags, true)) {
+            if ($element->parentNode !== null) {
+                $element->parentNode->removeChild($element);
+            }
+            return;
+        }
+
+        $allowedAttributesByTag = [
+            'h1' => ['class', 'style', 'align'],
+            'h2' => ['class', 'style', 'align'],
+            'h3' => ['class', 'style', 'align'],
+            'h4' => ['class', 'style', 'align'],
+            'h5' => ['class', 'style', 'align'],
+            'h6' => ['class', 'style', 'align'],
+            'p' => ['class', 'style', 'align'],
+            'ul' => ['class', 'style', 'align'],
+            'ol' => ['class', 'style', 'align'],
+            'li' => ['class', 'style', 'align'],
+            'strong' => ['class'],
+            'em' => ['class'],
+            'b' => ['class'],
+            'i' => ['class'],
+            'u' => ['class'],
+            'br' => [],
+            'blockquote' => ['class', 'style', 'align'],
+            'a' => ['href', 'title', 'target', 'rel', 'class'],
+            'img' => ['src', 'alt', 'title', 'width', 'height', 'loading', 'class', 'align'],
+            'figure' => ['class', 'style', 'align'],
+            'figcaption' => ['class', 'style', 'align'],
+            'hr' => ['class'],
+            'div' => ['class', 'style', 'align'],
+            'span' => ['class', 'style', 'align'],
+        ];
+
+        if (!array_key_exists($tagName, $allowedAttributesByTag)) {
+            $this->unwrapNode($element);
+            return;
+        }
+
+        $allowedAttributes = $allowedAttributesByTag[$tagName];
+        $attributesToRemove = [];
+
+        foreach ($element->attributes as $attribute) {
+            $attrName = strtolower($attribute->name);
+            $attrValue = $attribute->value;
+
+            if (str_starts_with($attrName, 'on')) {
+                $attributesToRemove[] = $attribute->name;
+                continue;
+            }
+
+            if (!in_array($attrName, $allowedAttributes, true)) {
+                $attributesToRemove[] = $attribute->name;
+                continue;
+            }
+
+            if ($attrName === 'href' || $attrName === 'src') {
+                $sanitizedUrl = $this->sanitizeContentUrl($attrValue, $attrName === 'src');
+                if ($sanitizedUrl === null) {
+                    $attributesToRemove[] = $attribute->name;
+                } else {
+                    $element->setAttribute($attribute->name, $sanitizedUrl);
+                }
+                continue;
+            }
+
+            if ($attrName === 'style') {
+                $sanitizedStyle = $this->sanitizeInlineStyle($attrValue);
+                if ($sanitizedStyle === '') {
+                    $attributesToRemove[] = $attribute->name;
+                } else {
+                    $element->setAttribute($attribute->name, $sanitizedStyle);
+                }
+                continue;
+            }
+
+            if ($attrName === 'class') {
+                $sanitizedClass = $this->sanitizeClassAttribute($attrValue);
+                if ($sanitizedClass === '') {
+                    $attributesToRemove[] = $attribute->name;
+                } else {
+                    $element->setAttribute($attribute->name, $sanitizedClass);
+                }
+                continue;
+            }
+
+            if ($attrName === 'align') {
+                $sanitizedAlign = $this->sanitizeAlignAttribute($attrValue);
+                if ($sanitizedAlign === null) {
+                    $attributesToRemove[] = $attribute->name;
+                } else {
+                    $element->setAttribute($attribute->name, $sanitizedAlign);
+                }
+                continue;
+            }
+
+            if ($attrName === 'target') {
+                $target = strtolower(trim($attrValue));
+                if (!in_array($target, ['_blank', '_self'], true)) {
+                    $attributesToRemove[] = $attribute->name;
+                } else {
+                    $element->setAttribute($attribute->name, $target);
+                }
+                continue;
+            }
+
+            if ($attrName === 'rel') {
+                $sanitizedRel = $this->sanitizeRelAttribute($attrValue);
+                if ($sanitizedRel === '') {
+                    $attributesToRemove[] = $attribute->name;
+                } else {
+                    $element->setAttribute($attribute->name, $sanitizedRel);
+                }
+                continue;
+            }
+
+            if (($attrName === 'width' || $attrName === 'height') && !preg_match('/^[1-9][0-9]{0,3}$/', trim($attrValue))) {
+                $attributesToRemove[] = $attribute->name;
+                continue;
+            }
+
+            if ($attrName === 'loading') {
+                $loading = strtolower(trim($attrValue));
+                if (!in_array($loading, ['lazy', 'eager'], true)) {
+                    $attributesToRemove[] = $attribute->name;
+                } else {
+                    $element->setAttribute($attribute->name, $loading);
+                }
+            }
+        }
+
+        foreach (array_unique($attributesToRemove) as $attributeName) {
+            $element->removeAttribute($attributeName);
+        }
+
+        if ($tagName === 'a' && strtolower($element->getAttribute('target')) === '_blank') {
+            $rel = $this->sanitizeRelAttribute($element->getAttribute('rel'));
+            $tokens = $rel === '' ? [] : (preg_split('/\s+/', $rel) ?: []);
+            if (!in_array('noopener', $tokens, true)) {
+                $tokens[] = 'noopener';
+            }
+            if (!in_array('noreferrer', $tokens, true)) {
+                $tokens[] = 'noreferrer';
+            }
+            $element->setAttribute('rel', implode(' ', array_filter($tokens)));
+        }
+
+        $this->sanitizeContentNodeTree($element);
+    }
+
+    private function unwrapNode(\DOMElement $node): void
+    {
+        $parent = $node->parentNode;
+        if ($parent === null) {
+            return;
+        }
+
+        while ($node->firstChild !== null) {
+            $parent->insertBefore($node->firstChild, $node);
+        }
+
+        $parent->removeChild($node);
+    }
+
+    private function sanitizeContentUrl(string $url, bool $isImageSource): ?string
+    {
+        $url = trim($url);
+        if ($url === '') {
+            return null;
+        }
+
+        if (preg_match('/[\x00-\x1F\x7F]/', $url) === 1) {
+            return null;
+        }
+
+        $decoded = html_entity_decode($url, ENT_QUOTES | ENT_HTML5, 'UTF-8');
+        $scheme = parse_url($decoded, PHP_URL_SCHEME);
+        if (is_string($scheme)) {
+            $scheme = strtolower($scheme);
+            $allowedSchemes = $isImageSource ? ['http', 'https'] : ['http', 'https', 'mailto', 'tel'];
+            if (!in_array($scheme, $allowedSchemes, true)) {
+                return null;
+            }
+        }
+
+        return $url;
+    }
+
+    private function sanitizeInlineStyle(string $style): string
+    {
+        $style = trim($style);
+        if ($style === '') {
+            return '';
+        }
+
+        $cleaned = [];
+        $declarations = explode(';', $style);
+        foreach ($declarations as $declaration) {
+            $declaration = trim($declaration);
+            if ($declaration === '') {
+                continue;
+            }
+
+            [$property, $value] = array_pad(explode(':', $declaration, 2), 2, '');
+            $property = strtolower(trim($property));
+            $value = strtolower(trim($value));
+
+            if ($property !== 'text-align') {
+                continue;
+            }
+
+            if (!in_array($value, ['left', 'right', 'center', 'justify'], true)) {
+                continue;
+            }
+
+            $cleaned[] = $property . ':' . $value;
+        }
+
+        return implode('; ', $cleaned);
+    }
+
+    private function sanitizeClassAttribute(string $classValue): string
+    {
+        $classValue = trim($classValue);
+        if ($classValue === '') {
+            return '';
+        }
+
+        $classes = preg_split('/\s+/', $classValue) ?: [];
+        $sanitized = [];
+
+        foreach ($classes as $className) {
+            if (preg_match('/^[a-zA-Z0-9_-]{1,64}$/', $className) === 1) {
+                $sanitized[] = $className;
+            }
+        }
+
+        return implode(' ', array_values(array_unique($sanitized)));
+    }
+
+    private function sanitizeAlignAttribute(string $alignValue): ?string
+    {
+        $alignValue = strtolower(trim($alignValue));
+        if ($alignValue === '') {
+            return null;
+        }
+
+        if (!in_array($alignValue, ['left', 'right', 'center', 'justify'], true)) {
+            return null;
+        }
+
+        return $alignValue;
+    }
+
+    private function sanitizeRelAttribute(string $relValue): string
+    {
+        $relValue = strtolower(trim($relValue));
+        if ($relValue === '') {
+            return '';
+        }
+
+        $allowed = ['noopener', 'noreferrer', 'nofollow', 'ugc', 'sponsored'];
+        $tokens = preg_split('/\s+/', $relValue) ?: [];
+        $sanitized = [];
+
+        foreach ($tokens as $token) {
+            if (in_array($token, $allowed, true)) {
+                $sanitized[] = $token;
+            }
+        }
+
+        return implode(' ', array_values(array_unique($sanitized)));
+    }
+
+    private function sanitizeContentHtmlFallback(string $html): string
+    {
+        $allowedTags = '<h1><h2><h3><h4><h5><h6><p><ul><ol><li><strong><em><b><i><u><br><blockquote><a><img><figure><figcaption><hr><div><span>';
+        $html = strip_tags($html, $allowedTags);
+        $html = preg_replace("/\\s+on[a-z]+\\s*=\\s*(?:\"[^\"]*\"|'[^']*'|[^\\s>]+)/i", '', $html) ?? '';
+        $html = preg_replace("/\\s(?:href|src)\\s*=\\s*(?:\"\\s*(?:javascript|data):[^\"]*\"|'\\s*(?:javascript|data):[^']*'|\\s*(?:javascript|data):[^\\s>]+)/i", '', $html) ?? '';
+
+        return trim($html);
+    }
+
     private function normalizeDateTimeInput(string $value): ?string
     {
         $value = trim($value);
@@ -375,6 +766,22 @@ final class ArticleController
                 return $baseSlug . '-' . time();
             }
         }
+    }
+
+    private function resolveArticleSlug(int $articleId, string $fallbackSlug = ''): ?string
+    {
+        $article = $this->articleModel->findById($articleId);
+
+        if ($article !== null) {
+            $slug = trim((string) ($article['slug'] ?? ''));
+            if ($slug !== '') {
+                return $slug;
+            }
+        }
+
+        $fallbackSlug = trim($fallbackSlug);
+
+        return $fallbackSlug !== '' ? $fallbackSlug : null;
     }
 
     private function slugify(string $value): string

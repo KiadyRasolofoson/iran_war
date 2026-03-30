@@ -8,6 +8,7 @@ use App\Controllers\Admin\ArticleController as AdminArticleController;
 use App\Controllers\Admin\AuthController as AdminAuthController;
 use App\Controllers\Admin\CategoryController as AdminCategoryController;
 use App\Controllers\Admin\DashboardController;
+use App\Controllers\Admin\MediaController as AdminMediaController;
 use App\Controllers\Admin\UserController as AdminUserController;
 use App\Controllers\Front\ArticleController as FrontArticleController;
 use App\Controllers\Front\HomeController;
@@ -55,6 +56,10 @@ $router->post('/admin/users', [AdminUserController::class, 'store']);
 $router->get('/admin/users/{id}/edit', [AdminUserController::class, 'edit']);
 $router->post('/admin/users/{id}/update', [AdminUserController::class, 'update']);
 $router->post('/admin/users/{id}/delete', [AdminUserController::class, 'delete']);
+
+// BackOffice media (JSON)
+$router->get('/admin/media/images', [AdminMediaController::class, 'index']);
+$router->post('/admin/media/upload', [AdminMediaController::class, 'upload']);
 
 $router->setNotFoundHandler(static function (string $method, string $path): void {
     $safePath = htmlspecialchars($path, ENT_QUOTES, 'UTF-8');

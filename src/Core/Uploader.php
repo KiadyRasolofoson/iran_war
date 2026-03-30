@@ -74,8 +74,25 @@ final class Uploader
         $safeDir = $this->normalizeSubDirectory($subDirectory);
         $targetDir = $this->uploadRoot . '/' . $safeDir;
 
-        if (!is_dir($targetDir) && !mkdir($targetDir, 0755, true) && !is_dir($targetDir)) {
-            throw new RuntimeException('Unable to create upload directory.');
+        if (!is_dir($targetDir)) {
+            $parentDir = $this->findNearestExistingParentDirectory($targetDir);
+            if (!is_writable($parentDir)) {
+                throw new RuntimeException('Upload parent directory is not writable: ' . $parentDir);
+            }
+
+            $mkdirWarning = null;
+            if (!$this->createDirectorySilently($targetDir, 0755, true, $mkdirWarning) && !is_dir($targetDir)) {
+                $message = 'Unable to create upload directory: ' . $targetDir;
+                if (is_string($mkdirWarning) && $mkdirWarning !== '') {
+                    $message .= '. Details: ' . $mkdirWarning;
+                }
+
+                throw new RuntimeException($message);
+            }
+        }
+
+        if (!is_writable($targetDir)) {
+            throw new RuntimeException('Upload directory is not writable: ' . $targetDir);
         }
 
         $baseName = (string) pathinfo($originalName, PATHINFO_FILENAME);
@@ -83,8 +100,14 @@ final class Uploader
         $uniqueName = $slug . '-' . date('YmdHis') . '-' . bin2hex(random_bytes(6)) . '.' . $extension;
 
         $destination = $targetDir . '/' . $uniqueName;
-        if (!move_uploaded_file($tmpName, $destination)) {
-            throw new RuntimeException('Unable to move uploaded file.');
+        $moveWarning = null;
+        if (!$this->moveUploadedFileSilently($tmpName, $destination, $moveWarning)) {
+            $message = 'Unable to move uploaded file to destination: ' . $destination;
+            if (is_string($moveWarning) && $moveWarning !== '') {
+                $message .= '. Details: ' . $moveWarning;
+            }
+
+            throw new RuntimeException($message);
         }
 
         return $this->publicBase . '/' . $safeDir . '/' . $uniqueName;
@@ -164,6 +187,56 @@ final class Uploader
         }
 
         return implode('/', $safeSegments);
+    }
+
+    private function findNearestExistingParentDirectory(string $path): string
+    {
+        $candidate = rtrim($path, '/');
+
+        while ($candidate !== '' && !is_dir($candidate)) {
+            $next = dirname($candidate);
+            if ($next === $candidate) {
+                break;
+            }
+
+            $candidate = $next;
+        }
+
+        if ($candidate === '' || !is_dir($candidate)) {
+            throw new RuntimeException('No existing parent directory found for upload path: ' . $path);
+        }
+
+        return $candidate;
+    }
+
+    private function createDirectorySilently(string $directory, int $permissions, bool $recursive, ?string &$warning = null): bool
+    {
+        $warning = null;
+        set_error_handler(static function (int $severity, string $message) use (&$warning): bool {
+            $warning = $message;
+            return true;
+        });
+
+        try {
+            return mkdir($directory, $permissions, $recursive);
+        } finally {
+            restore_error_handler();
+        }
+    }
+
+    private function moveUploadedFileSilently(string $from, string $to, ?string &$warning = null): bool
+    {
+        $warning = null;
+        set_error_handler(static function (int $severity, string $message) use (&$warning): bool {
+            $warning = $message;
+            return true;
+        });
+
+        try {
+            return move_uploaded_file($from, $to);
+        } finally {
+            restore_error_handler();
+        }
     }
 
     private function slugify(string $value): string

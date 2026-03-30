@@ -138,8 +138,9 @@ final class Router
         }
 
         $paramNames = [];
+        // Route placeholders are escaped by preg_quote (\{id\}), so match escaped braces here.
         $regex = preg_replace_callback(
-            '/\{([a-zA-Z_][a-zA-Z0-9_]*)\}/',
+            '/\\\{([a-zA-Z_][a-zA-Z0-9_]*)\\\}/',
             static function (array $matches) use (&$paramNames): string {
                 $paramNames[] = $matches[1];
 
@@ -152,7 +153,7 @@ final class Router
             throw new RuntimeException('Unable to compile route pattern: ' . $pattern);
         }
 
-        $regex = '#^' . str_replace(['\\{', '\\}'], ['{', '}'], $regex) . '$#';
+        $regex = '#^' . $regex . '$#';
 
         return [$regex, $paramNames];
     }

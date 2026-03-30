@@ -281,3 +281,101 @@ p {
         font-size: 1.5rem;
     }
 }
+
+/* ==========================================================================
+   Front Article Rich Content (Scoped)
+   ========================================================================== */
+.editor-rich-content {
+    color: var(--text-color);
+}
+
+.editor-rich-content h1,
+.editor-rich-content h2,
+.editor-rich-content h3 {
+    margin-top: 1.4rem;
+    margin-bottom: 0.7rem;
+    line-height: 1.3;
+}
+
+.editor-rich-content h1 {
+    font-size: 1.9rem;
+}
+
+.editor-rich-content h2 {
+    font-size: 1.5rem;
+}
+
+.editor-rich-content h3 {
+    font-size: 1.25rem;
+}
+
+.editor-rich-content p {
+    margin: 0 0 1rem;
+}
+
+.editor-rich-content ul,
+.editor-rich-content ol {
+    margin: 0 0 1rem 1.4rem;
+    padding-left: 0.4rem;
+}
+
+.editor-rich-content li {
+    margin: 0.3rem 0;
+}
+
+.editor-rich-content blockquote {
+    margin: 1rem 0;
+    padding: 0.6rem 0.9rem;
+    border-left: 3px solid #cbd5e1;
+    background: #f8fafc;
+    color: var(--text-light);
+}
+
+.editor-rich-content figure,
+.editor-rich-content .editor-figure {
+    margin: 1.2rem 0;
+}
+
+.editor-rich-content img,
+.editor-rich-content .editor-inline-image {
+    max-width: 100%;
+    height: auto;
+    display: block;
+}
+
+.editor-rich-content figcaption,
+.editor-rich-content .editor-figure-caption {
+    margin-top: 0.45rem;
+    font-size: 0.9rem;
+    color: var(--text-light);
+}
+
+.editor-rich-content .align-left {
+    margin-left: 0;
+    margin-right: auto;
+    text-align: left;
+}
+
+.editor-rich-content .align-center {
+    margin-left: auto;
+    margin-right: auto;
+    text-align: center;
+}
+
+.editor-rich-content .align-right {
+    margin-left: auto;
+    margin-right: 0;
+    text-align: right;
+}
+
+.editor-rich-content .text-left {
+    text-align: left;
+}
+
+.editor-rich-content .text-center {
+    text-align: center;
+}
+
+.editor-rich-content .text-right {
+    text-align: right;
+}

@@ -66,8 +66,13 @@ final class Article
     ): array {
         [$page, $perPage, $offset] = $this->normalizePagination($page, $perPage);
 
-        $where = ['(a.title LIKE :search OR a.excerpt LIKE :search OR a.content LIKE :search)'];
-        $params = [':search' => '%' . $search . '%'];
+        $searchLike = '%' . $search . '%';
+        $where = ['(a.title LIKE :search_title OR a.excerpt LIKE :search_excerpt OR a.content LIKE :search_content)'];
+        $params = [
+            ':search_title' => $searchLike,
+            ':search_excerpt' => $searchLike,
+            ':search_content' => $searchLike,
+        ];
 
         if ($status !== null && $status !== '') {
             $where[] = 'a.status = :status';

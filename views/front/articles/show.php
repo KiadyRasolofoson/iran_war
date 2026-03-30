@@ -57,7 +57,7 @@ if ($imageAlt === '') {
                 <?php endif; ?>
             </p>
 
-            <div style="line-height:1.65;">
+            <div class="editor-rich-content" style="line-height:1.65;">
                 <?= (string) ($article['content'] ?? '') ?>
             </div>
 
