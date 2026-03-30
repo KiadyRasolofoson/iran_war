@@ -8,29 +8,59 @@ $csrfToken = isset($csrfToken) && is_string($csrfToken) ? $csrfToken : '';
 
 $escape = static fn(string $value): string => htmlspecialchars($value, ENT_QUOTES, 'UTF-8');
 ?>
-<h1>Connexion BackOffice</h1>
-<p style="color:#4b5563;">Compte par defaut: <code>admin</code> / <code>admin123</code></p>
+<section aria-labelledby="admin-login-title">
+    <div class="card" style="max-width: 460px; margin: 2rem auto;">
+        <div class="card-header">
+            <h1 id="admin-login-title" class="mb-1">Connexion BackOffice</h1>
+            <p class="mb-1" style="color: var(--color-text-muted);">
+                Acces reserve a l'administration.
+            </p>
+        </div>
 
-<?php if ($error !== ''): ?>
-    <p style="background:#fef2f2;border:1px solid #fecaca;color:#991b1b;padding:10px;border-radius:6px;">
-        <?= $escape($error) ?>
-    </p>
-<?php endif; ?>
+        <div class="card-body">
+            <div class="alert alert-info" role="status">
+                Compte par defaut: <code>admin</code> / <code>admin123</code>
+            </div>
 
-<form method="post" action="/login" novalidate>
-    <input type="hidden" name="_token" value="<?= $escape($csrfToken) ?>">
+            <?php if ($error !== ''): ?>
+                <div class="alert alert-error" role="alert" aria-live="polite">
+                    <?= $escape($error) ?>
+                </div>
+            <?php endif; ?>
 
-    <p>
-        <label for="username">Nom d'utilisateur</label><br>
-        <input id="username" name="username" type="text" maxlength="50" required value="<?= $escape($oldUsername) ?>">
-    </p>
+            <form method="post" action="/login" novalidate>
+                <input type="hidden" name="_token" value="<?= $escape($csrfToken) ?>">
 
-    <p>
-        <label for="password">Mot de passe</label><br>
-        <input id="password" name="password" type="password" required>
-    </p>
+                <div class="form-group">
+                    <label class="form-label" for="username">Nom d'utilisateur</label>
+                    <input
+                        class="form-control"
+                        id="username"
+                        name="username"
+                        type="text"
+                        maxlength="50"
+                        required
+                        autocomplete="username"
+                        value="<?= $escape($oldUsername) ?>"
+                    >
+                </div>
 
-    <p>
-        <button type="submit">Se connecter</button>
-    </p>
-</form>
+                <div class="form-group">
+                    <label class="form-label" for="password">Mot de passe</label>
+                    <input
+                        class="form-control"
+                        id="password"
+                        name="password"
+                        type="password"
+                        required
+                        autocomplete="current-password"
+                    >
+                </div>
+
+                <div class="text-right">
+                    <button class="btn btn-primary" type="submit">Se connecter</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</section>
