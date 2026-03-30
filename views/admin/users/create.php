@@ -10,19 +10,14 @@ $isAdmin = strtolower((string) ($currentUser['role'] ?? '')) === 'admin';
 
 $h = static fn($value): string => htmlspecialchars((string) $value, ENT_QUOTES, 'UTF-8');
 ?>
-<style>
-    label { display: block; margin-top: 0.8rem; }
-    input, select { width: 100%; padding: 0.5rem; }
-    .errors { color: #8a1f11; }
-    .actions { margin-top: 1rem; display: flex; gap: 0.5rem; }
-    .btn { display: inline-block; border: 1px solid #333; padding: 8px 12px; border-radius: 6px; background: #fff; color: #111; text-decoration: none; }
-</style>
-
-<h1>Creer un utilisateur</h1>
-<p><a class="btn" href="/admin/users">Retour a la liste</a></p>
+<div class="d-flex justify-content-between align-items-center mb-2" style="gap: 0.75rem; flex-wrap: wrap;">
+    <h1 class="mb-1" style="margin: 0;">Creer un utilisateur</h1>
+    <a class="btn btn-outline" href="/admin/users">Retour a la liste</a>
+</div>
 
 <?php if ($errors !== []): ?>
-    <div class="errors">
+    <div class="alert alert-info" role="alert" aria-live="assertive" id="user-form-errors">
+        <strong>Veuillez corriger les erreurs suivantes :</strong>
         <ul>
             <?php foreach ($errors as $error): ?>
                 <li><?= $h((string) $error) ?></li>
@@ -31,27 +26,39 @@ $h = static fn($value): string => htmlspecialchars((string) $value, ENT_QUOTES, 
     </div>
 <?php endif; ?>
 
-<form method="post" action="/admin/users">
-    <input type="hidden" name="_token" value="<?= $h($csrfToken) ?>">
+<form method="post" action="/admin/users" class="card" <?= $errors !== [] ? 'aria-describedby="user-form-errors"' : '' ?>>
+    <div class="card-header">Informations utilisateur</div>
+    <div class="card-body">
+        <input type="hidden" name="_token" value="<?= $h($csrfToken) ?>">
 
-    <label for="username">Username</label>
-    <input id="username" name="username" type="text" required value="<?= $h((string) ($old['username'] ?? '')) ?>">
+        <div class="form-group">
+            <label class="form-label" for="username">Username</label>
+            <input class="form-control" id="username" name="username" type="text" required autocomplete="username" value="<?= $h((string) ($old['username'] ?? '')) ?>">
+        </div>
 
-    <label for="email">Email</label>
-    <input id="email" name="email" type="email" required value="<?= $h((string) ($old['email'] ?? '')) ?>">
+        <div class="form-group">
+            <label class="form-label" for="email">Email</label>
+            <input class="form-control" id="email" name="email" type="email" required autocomplete="email" value="<?= $h((string) ($old['email'] ?? '')) ?>">
+        </div>
 
-    <label for="password">Mot de passe</label>
-    <input id="password" name="password" type="password" required>
+        <div class="form-group">
+            <label class="form-label" for="password">Mot de passe</label>
+            <input class="form-control" id="password" name="password" type="password" required autocomplete="new-password">
+        </div>
 
-    <label for="role">Role</label>
-    <select id="role" name="role">
-        <?php if ($isAdmin): ?>
-            <option value="admin" <?= (($old['role'] ?? '') === 'admin') ? 'selected' : '' ?>>admin</option>
-        <?php endif; ?>
-        <option value="editor" <?= (($old['role'] ?? 'editor') === 'editor') ? 'selected' : '' ?>>editor</option>
-    </select>
+        <div class="form-group">
+            <label class="form-label" for="role">Role</label>
+            <select class="form-control" id="role" name="role">
+                <?php if ($isAdmin): ?>
+                    <option value="admin" <?= (($old['role'] ?? '') === 'admin') ? 'selected' : '' ?>>admin</option>
+                <?php endif; ?>
+                <option value="editor" <?= (($old['role'] ?? 'editor') === 'editor') ? 'selected' : '' ?>>editor</option>
+            </select>
+        </div>
 
-    <div class="actions">
-        <button type="submit">Enregistrer</button>
+        <div class="d-flex gap-2 mt-3" style="flex-wrap: wrap;">
+            <button type="submit" class="btn btn-primary">Enregistrer</button>
+            <a class="btn btn-outline" href="/admin/users">Annuler</a>
+        </div>
     </div>
 </form>

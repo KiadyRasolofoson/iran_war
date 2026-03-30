@@ -14,6 +14,7 @@ use Throwable;
 final class MediaController
 {
     private const ALLOWED_EXTENSIONS = ['jpg', 'jpeg', 'png', 'webp', 'gif'];
+    private const SCOPE_PATTERN = '/^[A-Za-z0-9_-]{1,64}$/';
 
     private Auth $auth;
     private Uploader $uploader;
@@ -35,9 +36,20 @@ final class MediaController
             return;
         }
 
-        try {
-            $images = $this->collectImages();
+        $scope = $this->resolveScopeFromQuery();
+        if ($scope === null) {
             $this->respondSuccess([
+                'scope' => '',
+                'images' => [],
+                'count' => 0,
+            ]);
+            return;
+        }
+
+        try {
+            $images = $this->collectImages($scope);
+            $this->respondSuccess([
+                'scope' => $scope,
                 'images' => $images,
                 'count' => count($images),
             ]);
@@ -60,6 +72,11 @@ final class MediaController
             return;
         }
 
+        $scope = $this->resolveScopeFromForm();
+        if ($scope === null) {
+            $scope = $this->generateDraftScope();
+        }
+
         $file = $this->resolveUploadedFile();
         if ($file === null) {
             $this->respondError('Missing uploaded file. Use field name image or file.', 400);
@@ -67,10 +84,11 @@ final class MediaController
         }
 
         try {
-            $relativePath = $this->uploader->upload($file, 'articles');
+            $relativePath = $this->uploader->upload($file, 'articles/' . $scope);
             $publicUrl = '/' . ltrim(str_replace('\\', '/', $relativePath), '/');
 
             $this->respondSuccess([
+                'scope' => $scope,
                 'path' => $relativePath,
                 'url' => $publicUrl,
             ], 201);
@@ -84,14 +102,15 @@ final class MediaController
     /**
      * @return array<int, array<string, mixed>>
      */
-    private function collectImages(): array
+    private function collectImages(string $scope): array
     {
-        if (!is_dir($this->articlesUploadDirectory)) {
+        $scopeDirectory = $this->articlesUploadDirectory . '/' . $scope;
+        if (!is_dir($scopeDirectory)) {
             return [];
         }
 
         $iterator = new RecursiveIteratorIterator(
-            new RecursiveDirectoryIterator($this->articlesUploadDirectory, RecursiveDirectoryIterator::SKIP_DOTS)
+            new RecursiveDirectoryIterator($scopeDirectory, RecursiveDirectoryIterator::SKIP_DOTS)
         );
 
         $images = [];
@@ -130,6 +149,49 @@ final class MediaController
         );
 
         return $images;
+    }
+
+    private function resolveScopeFromQuery(): ?string
+    {
+        $value = $_GET['scope'] ?? null;
+        if (!is_string($value)) {
+            return null;
+        }
+
+        return $this->sanitizeScope($value);
+    }
+
+    private function resolveScopeFromForm(): ?string
+    {
+        $value = $_POST['scope'] ?? null;
+        if (!is_string($value)) {
+            return null;
+        }
+
+        return $this->sanitizeScope($value);
+    }
+
+    private function sanitizeScope(string $scope): ?string
+    {
+        $normalizedScope = trim($scope);
+        if ($normalizedScope === '') {
+            return null;
+        }
+
+        if (preg_match(self::SCOPE_PATTERN, $normalizedScope) !== 1) {
+            return null;
+        }
+
+        return $normalizedScope;
+    }
+
+    private function generateDraftScope(): string
+    {
+        try {
+            return 'draft-' . bin2hex(random_bytes(12));
+        } catch (Throwable) {
+            return 'draft-' . substr(hash('sha256', uniqid('', true)), 0, 24);
+        }
     }
 
     private function toPublicRelativePath(string $realPath): ?string

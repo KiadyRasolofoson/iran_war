@@ -8,19 +8,12 @@ $csrfToken = (string) ($csrfToken ?? '');
 
 $h = static fn($value): string => htmlspecialchars((string) $value, ENT_QUOTES, 'UTF-8');
 ?>
-<style>
-    label { display: block; margin-top: 0.8rem; }
-    input, textarea, select { width: 100%; padding: 0.5rem; }
-    .errors { color: #8a1f11; }
-    .actions { margin-top: 1rem; display: flex; gap: 0.5rem; }
-    .btn { display: inline-block; border: 1px solid #333; padding: 8px 12px; border-radius: 6px; background: #fff; color: #111; text-decoration: none; }
-</style>
-
-<h1>Creer une categorie</h1>
-<p><a class="btn" href="/admin/categories">Retour a la liste</a></p>
+<h1 class="mb-1">Creer une categorie</h1>
+<p class="mb-2"><a class="btn btn-outline" href="/admin/categories">Retour a la liste</a></p>
 
 <?php if ($errors !== []): ?>
-    <div class="errors">
+    <div class="alert alert-info" role="alert" aria-live="assertive" id="category-form-errors">
+        <strong>Veuillez corriger les erreurs suivantes :</strong>
         <ul>
             <?php foreach ($errors as $error): ?>
                 <li><?= $h((string) $error) ?></li>
@@ -29,31 +22,47 @@ $h = static fn($value): string => htmlspecialchars((string) $value, ENT_QUOTES, 
     </div>
 <?php endif; ?>
 
-<form method="post" action="/admin/categories">
-    <input type="hidden" name="_token" value="<?= $h($csrfToken) ?>">
+<form method="post" action="/admin/categories" class="card" <?= $errors !== [] ? 'aria-describedby="category-form-errors"' : '' ?>>
+    <div class="card-header">Informations categorie</div>
+    <div class="card-body">
+        <input type="hidden" name="_token" value="<?= $h($csrfToken) ?>">
 
-    <label for="name">Nom</label>
-    <input id="name" name="name" type="text" required value="<?= $h((string) ($old['name'] ?? '')) ?>">
+        <div class="form-group">
+            <label class="form-label" for="name">Nom</label>
+            <input class="form-control" id="name" name="name" type="text" required value="<?= $h((string) ($old['name'] ?? '')) ?>">
+        </div>
 
-    <label for="slug">Slug</label>
-    <input id="slug" name="slug" type="text" placeholder="auto depuis le nom si vide" value="<?= $h((string) ($old['slug'] ?? '')) ?>">
+        <div class="form-group">
+            <label class="form-label" for="slug">Slug</label>
+            <input class="form-control" id="slug" name="slug" type="text" placeholder="auto depuis le nom si vide" value="<?= $h((string) ($old['slug'] ?? '')) ?>">
+        </div>
 
-    <label for="description">Description</label>
-    <textarea id="description" name="description" rows="4"><?= $h((string) ($old['description'] ?? '')) ?></textarea>
+        <div class="form-group">
+            <label class="form-label" for="description">Description</label>
+            <textarea class="form-control" id="description" name="description" rows="4"><?= $h((string) ($old['description'] ?? '')) ?></textarea>
+        </div>
 
-    <label for="seo_title">SEO title</label>
-    <input id="seo_title" name="seo_title" type="text" value="<?= $h((string) ($old['seo_title'] ?? '')) ?>">
+        <div class="form-group">
+            <label class="form-label" for="seo_title">SEO title</label>
+            <input class="form-control" id="seo_title" name="seo_title" type="text" value="<?= $h((string) ($old['seo_title'] ?? '')) ?>">
+        </div>
 
-    <label for="seo_description">SEO description</label>
-    <textarea id="seo_description" name="seo_description" rows="3"><?= $h((string) ($old['seo_description'] ?? '')) ?></textarea>
+        <div class="form-group">
+            <label class="form-label" for="seo_description">SEO description</label>
+            <textarea class="form-control" id="seo_description" name="seo_description" rows="3"><?= $h((string) ($old['seo_description'] ?? '')) ?></textarea>
+        </div>
 
-    <label for="status">Statut</label>
-    <select id="status" name="status">
-        <option value="active" <?= (($old['status'] ?? 'active') === 'active') ? 'selected' : '' ?>>active</option>
-        <option value="hidden" <?= (($old['status'] ?? '') === 'hidden') ? 'selected' : '' ?>>hidden</option>
-    </select>
+        <div class="form-group">
+            <label class="form-label" for="status">Statut</label>
+            <select class="form-control" id="status" name="status">
+                <option value="active" <?= (($old['status'] ?? 'active') === 'active') ? 'selected' : '' ?>>active</option>
+                <option value="hidden" <?= (($old['status'] ?? '') === 'hidden') ? 'selected' : '' ?>>hidden</option>
+            </select>
+        </div>
 
-    <div class="actions">
-        <button type="submit">Enregistrer</button>
+        <div class="d-flex gap-2 mt-3">
+            <button type="submit" class="btn btn-primary">Enregistrer</button>
+            <a class="btn btn-outline" href="/admin/categories">Annuler</a>
+        </div>
     </div>
 </form>

@@ -9,59 +9,67 @@ $csrfToken = (string) ($csrfToken ?? '');
 
 $h = static fn($value): string => htmlspecialchars((string) $value, ENT_QUOTES, 'UTF-8');
 ?>
-<style>
-    table { width: 100%; border-collapse: collapse; }
-    th, td { border: 1px solid #ddd; padding: 0.6rem; text-align: left; }
-    .actions { display: flex; gap: 0.5rem; }
-    .flash-success { color: #0b6b2a; }
-    .flash-error { color: #8a1f11; }
-    .btn { display: inline-block; border: 1px solid #333; padding: 8px 12px; border-radius: 6px; background: #fff; color: #111; text-decoration: none; }
-</style>
 
-<h1>Gestion des categories</h1>
-<p><a class="btn" href="/admin/categories/create">Creer une categorie</a></p>
+<div class="d-flex align-items-center justify-content-between mb-3" style="flex-wrap: wrap;">
+    <h1 class="mb-1" style="margin: 0;">Gestion des categories</h1>
+    <a class="btn btn-primary" href="/admin/categories/create">Creer une categorie</a>
+</div>
 
 <?php if (is_string($flashSuccess) && $flashSuccess !== ''): ?>
-    <p class="flash-success"><?= $h($flashSuccess) ?></p>
+    <div class="alert alert-info alert-success"><?= $h($flashSuccess) ?></div>
 <?php endif; ?>
 
 <?php if (is_string($flashError) && $flashError !== ''): ?>
-    <p class="flash-error"><?= $h($flashError) ?></p>
+    <div class="alert alert-info alert-error"><?= $h($flashError) ?></div>
 <?php endif; ?>
 
-<table>
-    <thead>
-        <tr>
-            <th>ID</th>
-            <th>Nom</th>
-            <th>Slug</th>
-            <th>Statut</th>
-            <th>Actions</th>
-        </tr>
-    </thead>
-    <tbody>
-        <?php if ($categories === []): ?>
-            <tr>
-                <td colspan="5">Aucune categorie.</td>
-            </tr>
-        <?php else: ?>
-            <?php foreach ($categories as $category): ?>
+<div class="card">
+    <div class="card-header">Liste des categories</div>
+    <div class="card-body">
+        <div class="table-responsive">
+            <table class="table">
+            <thead>
                 <tr>
-                    <td><?= (int) ($category['id'] ?? 0) ?></td>
-                    <td><?= $h((string) ($category['name'] ?? '')) ?></td>
-                    <td><?= $h((string) ($category['slug'] ?? '')) ?></td>
-                    <td><?= $h((string) ($category['status'] ?? '')) ?></td>
-                    <td>
-                        <div class="actions">
-                            <a href="/admin/categories/<?= (int) ($category['id'] ?? 0) ?>/edit">Modifier</a>
-                            <form method="post" action="/admin/categories/<?= (int) ($category['id'] ?? 0) ?>/delete" onsubmit="return confirm('Supprimer cette categorie ?');">
-                                <input type="hidden" name="_token" value="<?= $h($csrfToken) ?>">
-                                <button type="submit">Supprimer</button>
-                            </form>
-                        </div>
-                    </td>
+                    <th>ID</th>
+                    <th>Nom</th>
+                    <th>Slug</th>
+                    <th>Statut</th>
+                    <th>Actions</th>
                 </tr>
-            <?php endforeach; ?>
-        <?php endif; ?>
-    </tbody>
-</table>
+            </thead>
+            <tbody>
+                <?php if ($categories === []): ?>
+                    <tr>
+                        <td class="text-center" colspan="5">Aucune categorie.</td>
+                    </tr>
+                <?php else: ?>
+                    <?php foreach ($categories as $category): ?>
+                        <?php
+                        $categoryId = (int) ($category['id'] ?? 0);
+                        $categoryStatus = strtolower((string) ($category['status'] ?? ''));
+                        $statusClass = $categoryStatus === 'active' ? 'badge-primary' : 'badge-neutral';
+                        ?>
+                        <tr>
+                            <td><?= $categoryId ?></td>
+                            <td><?= $h((string) ($category['name'] ?? '')) ?></td>
+                            <td><?= $h((string) ($category['slug'] ?? '')) ?></td>
+                            <td>
+                                <span class="badge <?= $statusClass ?>"><?= $h((string) ($category['status'] ?? '')) ?></span>
+                            </td>
+                            <td>
+                                <div class="d-flex gap-2" style="flex-wrap: wrap;">
+                                    <a class="btn btn-outline" href="/admin/categories/<?= $categoryId ?>/edit">Modifier</a>
+                                    <form method="post" action="/admin/categories/<?= $categoryId ?>/delete" onsubmit="return confirm('Supprimer cette categorie ?');" style="margin: 0;">
+                                        <input type="hidden" name="_token" value="<?= $h($csrfToken) ?>">
+                                        <button class="btn btn-outline" type="submit">Supprimer</button>
+                                    </form>
+                                </div>
+                            </td>
+                        </tr>
+                    <?php endforeach; ?>
+                <?php endif; ?>
+            </tbody>
+            </table>
+        </div>
+    </div>
+</div>
