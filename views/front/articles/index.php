@@ -53,92 +53,110 @@ $resolveImageUrl = static function (?string $rawPath): ?string {
     return '/' . ltrim($path, '/');
 };
 ?>
-<div class="shell" style="max-width:1100px;margin:0 auto;padding:24px 16px 48px;">
-    <h1 style="margin:0 0 10px;font-size:2rem;line-height:1.2;">Articles publies</h1>
-    <p style="margin:0 0 18px;color:#6b7280;">Explorez les analyses par mots-cles, categorie et date de publication.</p>
+<div class="container articles-page">
+    <div class="articles-list-main">
+        <h1 class="page-title">Tous les Articles</h1>
+        <p style="color: var(--text-light); margin-bottom: var(--spacing-2xl);">
+            Trouvez les articles par catégorie, recherche ou date de publication.
+        </p>
 
-    <section style="background:#fff;border:1px solid #d6d3d1;border-radius:12px;padding:14px;margin-bottom:20px;" aria-label="Filtres de recherche">
-        <form method="get" action="/articles" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:10px;align-items:end;">
-            <div>
-                <label for="q" style="display:block;margin-bottom:4px;color:#6b7280;">Recherche</label>
-                <input type="text" id="q" name="q" value="<?= $h($q) ?>" placeholder="Titre ou contenu" style="width:100%;border:1px solid #d6d3d1;border-radius:8px;padding:8px 10px;">
-            </div>
+        <!-- Filtres -->
+        <section class="search-filters" style="background: var(--card-bg); border: 1px solid var(--border-color); border-radius: var(--border-radius-lg); padding: var(--spacing-lg); margin-bottom: var(--spacing-2xl);">
+            <form method="get" action="/articles" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: var(--spacing-lg); align-items: end;">
+                <div>
+                    <label for="q" style="display: block; margin-bottom: var(--spacing-sm); font-weight: 600; font-family: var(--font-sans);">Recherche</label>
+                    <input type="text" id="q" name="q" value="<?= $h($q) ?>" placeholder="Titre ou contenu..." style="width: 100%; border: 1px solid var(--border-color); border-radius: var(--border-radius-sm); padding: var(--spacing-sm); font-family: var(--font-body);">
+                </div>
 
-            <div>
-                <label for="category" style="display:block;margin-bottom:4px;color:#6b7280;">Categorie</label>
-                <select id="category" name="category" style="width:100%;border:1px solid #d6d3d1;border-radius:8px;padding:8px 10px;">
-                    <option value="">Toutes les categories</option>
-                    <?php foreach ($categories as $item): ?>
-                        <?php $slug = (string) ($item['slug'] ?? ''); ?>
-                        <option value="<?= $h($slug) ?>" <?= $slug === $category ? 'selected' : '' ?>>
-                            <?= $h((string) ($item['name'] ?? '')) ?>
-                        </option>
-                    <?php endforeach; ?>
-                </select>
-            </div>
+                <div>
+                    <label for="category" style="display: block; margin-bottom: var(--spacing-sm); font-weight: 600; font-family: var(--font-sans);">Catégorie</label>
+                    <select id="category" name="category" style="width: 100%; border: 1px solid var(--border-color); border-radius: var(--border-radius-sm); padding: var(--spacing-sm); font-family: var(--font-body);">
+                        <option value="">Toutes les catégories</option>
+                        <?php foreach ($categories as $item): ?>
+                            <?php $slug = (string) ($item['slug'] ?? ''); ?>
+                            <option value="<?= $h($slug) ?>" <?= $slug === $category ? 'selected' : '' ?>>
+                                <?= $h((string) ($item['name'] ?? '')) ?>
+                            </option>
+                        <?php endforeach; ?>
+                    </select>
+                </div>
 
-            <div>
-                <label for="date" style="display:block;margin-bottom:4px;color:#6b7280;">Date</label>
-                <input type="date" id="date" name="date" value="<?= $h($date) ?>" style="width:100%;border:1px solid #d6d3d1;border-radius:8px;padding:8px 10px;">
-            </div>
+                <div>
+                    <label for="date" style="display: block; margin-bottom: var(--spacing-sm); font-weight: 600; font-family: var(--font-sans);">Date</label>
+                    <input type="date" id="date" name="date" value="<?= $h($date) ?>" style="width: 100%; border: 1px solid var(--border-color); border-radius: var(--border-radius-sm); padding: var(--spacing-sm); font-family: var(--font-body);">
+                </div>
 
-            <div>
-                <button type="submit" style="border:1px solid #8b4513;border-radius:8px;background:#8b4513;color:#fff;padding:9px 12px;cursor:pointer;">Filtrer</button>
-                <a href="/articles" style="border:1px solid #8b4513;border-radius:8px;background:#fff;color:#8b4513;padding:9px 12px;text-decoration:none;display:inline-block;">Reinitialiser</a>
-            </div>
-        </form>
-    </section>
-
-    <p style="margin:8px 0 18px;color:#6b7280;"><?= $h($totalArticles) ?> article(s) trouves.</p>
-
-    <?php if ($articles === []): ?>
-        <p style="background:#fce7d5;border:1px solid #f1c9a5;border-radius:10px;padding:14px;">Aucun article publie ne correspond a ces filtres.</p>
-    <?php else: ?>
-        <section style="display:grid;grid-template-columns:repeat(auto-fit,minmax(255px,1fr));gap:14px;" aria-label="Liste des articles">
-            <?php foreach ($articles as $article): ?>
-                <?php
-                $title = (string) ($article['title'] ?? 'Sans titre');
-                $excerpt = trim((string) ($article['excerpt'] ?? ''));
-                if ($excerpt === '') {
-                    $excerpt = mb_substr(strip_tags((string) ($article['content'] ?? '')), 0, 160) . '...';
-                }
-
-                $imageUrl = $resolveImageUrl($article['image'] ?? null);
-                $configuredAlt = trim((string) ($article['image_alt'] ?? ''));
-                $imageAlt = $configuredAlt !== '' ? $configuredAlt : 'Image de couverture de l\'article ' . $title;
-                $categoryName = trim((string) ($article['category_name'] ?? ''));
-                ?>
-                <article style="background:#fff;border:1px solid #d6d3d1;border-radius:12px;overflow:hidden;display:grid;grid-template-rows:160px auto;">
-                    <?php if ($imageUrl !== null): ?>
-                        <img src="<?= $h($imageUrl) ?>" alt="<?= $h($imageAlt) ?>" loading="lazy" style="width:100%;height:100%;object-fit:cover;background:#e7e5e4;">
-                    <?php else: ?>
-                        <div role="img" aria-label="<?= $h($imageAlt) ?>" style="background:#e7e5e4;"></div>
-                    <?php endif; ?>
-
-                    <div style="padding:12px;">
-                        <h2 style="margin:0 0 8px;font-size:1.15rem;"><a href="/article/<?= $h((string) ($article['slug'] ?? '')) ?>" style="color:inherit;text-decoration:none;"><?= $h($title) ?></a></h2>
-                        <p style="margin:0 0 8px;font-size:0.9rem;color:#6b7280;">
-                            <?= $h((string) ($article['published_at'] ?? 'Date inconnue')) ?>
-                            <?php if ($categoryName !== ''): ?>
-                                | <a href="/categorie/<?= $h((string) ($article['category_slug'] ?? '')) ?>"><?= $h($categoryName) ?></a>
-                            <?php endif; ?>
-                        </p>
-                        <p style="margin:0;line-height:1.45;"><?= $h($excerpt) ?></p>
-                    </div>
-                </article>
-            <?php endforeach; ?>
+                <div style="display: flex; gap: var(--spacing-md);">
+                    <button type="submit" style="flex: 1; background-color: var(--accent); color: white; border: none; border-radius: var(--border-radius-sm); padding: var(--spacing-sm); font-weight: 600; cursor: pointer; font-family: var(--font-sans); text-transform: uppercase; font-size: 0.85rem;">Rechercher</button>
+                    <a href="/articles" style="flex: 1; background-color: var(--card-bg); color: var(--accent); border: 2px solid var(--accent); border-radius: var(--border-radius-sm); padding: var(--spacing-sm); text-decoration: none; display: flex; align-items: center; justify-content: center; font-weight: 600; cursor: pointer; font-family: var(--font-sans); text-transform: uppercase; font-size: 0.85rem;">Réinitialiser</a>
+                </div>
+            </form>
         </section>
-    <?php endif; ?>
 
-    <nav aria-label="Pagination des articles" style="margin-top:20px;display:flex;align-items:center;gap:10px;flex-wrap:wrap;">
-        <?php if (($pagination['has_prev'] ?? false) === true): ?>
-            <a href="/articles?<?= $h($buildQuery($currentPage - 1)) ?>" style="border:1px solid #8b4513;border-radius:8px;background:#fff;color:#8b4513;padding:9px 12px;text-decoration:none;display:inline-block;">Page precedente</a>
+        <p style="color: var(--text-light); font-family: var(--font-sans); margin-bottom: var(--spacing-lg);">
+            <strong><?= $h((string)$totalArticles) ?></strong> article(s) trouvé(s)
+        </p>
+
+        <?php if ($articles === []): ?>
+            <div class="no-articles-message">
+                <p>Aucun article ne correspond à vos critères de recherche.</p>
+            </div>
+        <?php else: ?>
+            <section class="articles-list" aria-label="Liste des articles">
+                <?php foreach ($articles as $article): ?>
+                    <?php
+                    $title = (string) ($article['title'] ?? 'Sans titre');
+                    $excerpt = trim((string) ($article['excerpt'] ?? ''));
+                    if ($excerpt === '') {
+                        $excerpt = mb_substr(strip_tags((string) ($article['content'] ?? '')), 0, 160) . '...';
+                    }
+
+                    $imageUrl = $resolveImageUrl($article['image'] ?? null);
+                    $configuredAlt = trim((string) ($article['image_alt'] ?? ''));
+                    $imageAlt = $configuredAlt !== '' ? $configuredAlt : 'Image de couverture de l\'article ' . $title;
+                    $categoryName = trim((string) ($article['category_name'] ?? ''));
+                    $publishedAt = (string) ($article['published_at'] ?? 'Date inconnue');
+                    ?>
+                    <article class="article-list-item">
+                        <?php if ($imageUrl !== null): ?>
+                            <img src="<?= $h($imageUrl) ?>" alt="<?= $h($imageAlt) ?>" class="article-list-image" loading="lazy">
+                        <?php else: ?>
+                            <div class="article-list-image" style="background: linear-gradient(135deg, var(--border-light) 0%, var(--border-color) 100%); display: flex; align-items: center; justify-content: center; color: var(--text-lighter);">
+                                Aucune image
+                            </div>
+                        <?php endif; ?>
+
+                        <div class="article-list-content">
+                            <h3><a href="/article/<?= $h((string) ($article['slug'] ?? '')) ?>"><?= $h($title) ?></a></h3>
+                            <div class="article-list-meta">
+                                <span>📅 <?= $h($publishedAt) ?></span>
+                                <?php if ($categoryName !== ''): ?>
+                                    | <span>📂 <a href="/categorie/<?= $h((string) ($article['category_slug'] ?? '')) ?>" style="color: var(--accent);"><?= $h($categoryName) ?></a></span>
+                                <?php endif; ?>
+                            </div>
+                            <p class="excerpt"><?= $h($excerpt) ?></p>
+                            <a href="/article/<?= $h((string) ($article['slug'] ?? '')) ?>" class="read-more-link">Lire la suite →</a>
+                        </div>
+                    </article>
+                <?php endforeach; ?>
+            </section>
         <?php endif; ?>
 
-        <span style="color:#6b7280;">Page <?= $h($currentPage) ?> / <?= $h($totalPages) ?></span>
+        <!-- Pagination -->
+        <?php if ($totalPages > 1): ?>
+            <nav class="pagination" aria-label="Pagination" style="margin-top: var(--spacing-3xl); display: flex; align-items: center; gap: var(--spacing-lg); justify-content: center; flex-wrap: wrap;">
+                <?php if (($pagination['has_prev'] ?? false) === true): ?>
+                    <a href="/articles?<?= $h($buildQuery($currentPage - 1)) ?>" style="background-color: var(--accent); color: white; padding: var(--spacing-sm) var(--spacing-lg); border-radius: var(--border-radius-sm); text-decoration: none; font-weight: 600; font-family: var(--font-sans);">← Précédente</a>
+                <?php endif; ?>
 
-        <?php if (($pagination['has_next'] ?? false) === true): ?>
-            <a href="/articles?<?= $h($buildQuery($currentPage + 1)) ?>" style="border:1px solid #8b4513;border-radius:8px;background:#fff;color:#8b4513;padding:9px 12px;text-decoration:none;display:inline-block;">Page suivante</a>
+                <span style="color: var(--text-light); font-family: var(--font-sans); font-weight: 600;">
+                    Page <strong><?= $h((string)$currentPage) ?></strong> / <strong><?= $h((string)$totalPages) ?></strong>
+                </span>
+
+                <?php if (($pagination['has_next'] ?? false) === true): ?>
+                    <a href="/articles?<?= $h($buildQuery($currentPage + 1)) ?>" style="background-color: var(--accent); color: white; padding: var(--spacing-sm) var(--spacing-lg); border-radius: var(--border-radius-sm); text-decoration: none; font-weight: 600; font-family: var(--font-sans);">Suivante →</a>
+                <?php endif; ?>
+            </nav>
         <?php endif; ?>
-    </nav>
+    </div>
 </div>
