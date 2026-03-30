@@ -1,7 +1,6 @@
 <div class="home-page">
     <section class="hero-section">
         <div class="container">
-            <!-- Balise H1 unique pour la page d'accueil -->
             <h1 class="page-title">À la une : Toute l'actualité en temps réel</h1>
             
             <?php if (!empty($mainArticle)): ?>
@@ -47,7 +46,7 @@
                     </article>
                 <?php endforeach; ?>
             <?php else: ?>
-                <p>Aucun article récent à afficher pour le moment.</p>
+                <p>Aucun article recent a afficher pour le moment.</p>
             <?php endif; ?>
         </div>
     </section>

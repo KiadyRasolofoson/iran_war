@@ -60,7 +60,15 @@ final class ArticleController
             static fn(array $category): bool => (string) ($category['status'] ?? 'hidden') === 'active'
         ));
 
-        $this->render('front/articles/index.php', [
+        $pageTitle = 'Articles - Guerre Iran Irak';
+        if ($selectedCategory !== null && (string) ($selectedCategory['name'] ?? '') !== '') {
+            $pageTitle = 'Articles - ' . (string) $selectedCategory['name'];
+        }
+
+        $metaDescription = 'Parcourez les articles publies avec recherche, filtres et navigation par categorie.';
+        $ogImage = '/assets/images/default-og.jpg';
+
+        $this->render('front/articles/index', [
             'articles' => $result['items'] ?? [],
             'pagination' => $result['pagination'] ?? [],
             'categories' => $categories,
@@ -70,7 +78,7 @@ final class ArticleController
                 'date' => $dateFilter ?? '',
             ],
             'selectedCategory' => $selectedCategory,
-        ]);
+        ], $pageTitle, $metaDescription, $ogImage);
     }
 
     public function show($slug): void
@@ -105,10 +113,30 @@ final class ArticleController
             }
         }
 
-        $this->render('front/articles/show.php', [
+        $title = (string) ($article['title'] ?? 'Article');
+        $pageTitle = trim((string) ($article['meta_title'] ?? ''));
+        if ($pageTitle === '') {
+            $pageTitle = $title;
+        }
+
+        $metaDescription = trim((string) ($article['meta_description'] ?? ''));
+        if ($metaDescription === '') {
+            $metaDescription = trim((string) ($article['excerpt'] ?? ''));
+        }
+        if ($metaDescription === '') {
+            $metaDescription = mb_substr(strip_tags((string) ($article['content'] ?? '')), 0, 160);
+        }
+
+        $ogImage = '/assets/images/default-og.jpg';
+        $rawImage = trim((string) ($article['image'] ?? ''));
+        if ($rawImage !== '') {
+            $ogImage = str_starts_with($rawImage, '/') ? $rawImage : '/' . ltrim($rawImage, '/');
+        }
+
+        $this->render('front/articles/show', [
             'article' => $article,
             'relatedArticles' => $related,
-        ]);
+        ], $pageTitle, $metaDescription, $ogImage);
     }
 
     public function byCategory($slug): void
@@ -142,7 +170,19 @@ final class ArticleController
             );
         }
 
-        $this->render('front/articles/category.php', [
+        $pageTitle = trim((string) ($category['seo_title'] ?? ''));
+        if ($pageTitle === '') {
+            $pageTitle = 'Articles - ' . (string) ($category['name'] ?? 'Categorie');
+        }
+
+        $metaDescription = trim((string) ($category['seo_description'] ?? ''));
+        if ($metaDescription === '') {
+            $metaDescription = trim((string) ($category['description'] ?? 'Articles de la categorie.'));
+        }
+
+        $ogImage = '/assets/images/default-og.jpg';
+
+        $this->render('front/articles/category', [
             'category' => $category,
             'articles' => $result['items'] ?? [],
             'pagination' => $result['pagination'] ?? [],
@@ -150,7 +190,7 @@ final class ArticleController
                 'q' => $search,
                 'date' => $dateFilter ?? '',
             ],
-        ]);
+        ], $pageTitle, $metaDescription, $ogImage);
     }
 
     private function queryPublishedArticles(string $search, int $page, int $perPage, ?int $categoryId): array
@@ -251,11 +291,19 @@ final class ArticleController
         return date('Y-m-d', $timestamp);
     }
 
-    private function render(string $view, array $data = []): void
+    private function render(
+        string $view,
+        array $data = [],
+        string $pageTitle = 'Guerre Iran Irak',
+        string $metaDescription = '',
+        string $ogImage = '/assets/images/default-og.jpg'
+    ): void
     {
         extract($data, EXTR_SKIP);
 
-        $viewPath = APP_ROOT . '/views/' . $view;
+        $viewPath = APP_ROOT . '/views/' . $view . '.php';
+        $layoutPath = APP_ROOT . '/views/front/layout.php';
+
         if (!is_readable($viewPath)) {
             http_response_code(500);
             header('Content-Type: text/plain; charset=UTF-8');
@@ -263,7 +311,18 @@ final class ArticleController
             exit;
         }
 
+        if (!is_readable($layoutPath)) {
+            http_response_code(500);
+            header('Content-Type: text/plain; charset=UTF-8');
+            echo '500 Layout not found';
+            exit;
+        }
+
+        ob_start();
         require $viewPath;
+        $content = (string) ob_get_clean();
+
+        require $layoutPath;
     }
 
     private function notFound(string $message): void

@@ -29,7 +29,7 @@ final class CategoryController
             'flashSuccess' => $this->pullFlash('success'),
             'flashError' => $this->pullFlash('error'),
             'csrfToken' => $this->auth->token(),
-        ]);
+        ], 'Gestion des categories');
     }
 
     public function create(): void
@@ -47,7 +47,7 @@ final class CategoryController
                 'status' => 'active',
             ],
             'csrfToken' => $this->auth->token(),
-        ]);
+        ], 'Creer une categorie');
     }
 
     public function store(): void
@@ -69,7 +69,7 @@ final class CategoryController
                 'errors' => $errors,
                 'old' => $payload,
                 'csrfToken' => $this->auth->token(),
-            ]);
+            ], 'Creer une categorie');
 
             return;
         }
@@ -94,7 +94,7 @@ final class CategoryController
             'errors' => [],
             'category' => $category,
             'csrfToken' => $this->auth->token(),
-        ]);
+        ], 'Modifier une categorie');
     }
 
     public function update(string $id): void
@@ -123,7 +123,7 @@ final class CategoryController
                 'errors' => $errors,
                 'category' => array_merge($category, $payload),
                 'csrfToken' => $this->auth->token(),
-            ]);
+            ], 'Modifier une categorie');
 
             return;
         }
@@ -210,10 +210,25 @@ final class CategoryController
         }
     }
 
-    private function render(string $view, array $data = []): void
+    private function render(string $view, array $data = [], string $title = 'Administration'): void
     {
+        $viewPath = APP_ROOT . '/views/' . $view . '.php';
+        $layoutPath = APP_ROOT . '/views/admin/layout.php';
+
+        if (!is_readable($viewPath) || !is_readable($layoutPath)) {
+            throw new \RuntimeException('View not found: ' . $viewPath);
+        }
+
         extract($data, EXTR_SKIP);
-        require APP_ROOT . '/views/' . $view . '.php';
+        ob_start();
+        require $viewPath;
+        $content = (string) ob_get_clean();
+
+        $showAdminNav = true;
+        $authUser = $this->auth->user();
+        $csrfToken = $this->auth->token();
+
+        require $layoutPath;
     }
 
     private function redirect(string $location): void

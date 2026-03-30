@@ -1,32 +1,53 @@
 # TODO - Projet Iran War
 
-Checklist centrale pour suivre le CDC: FrontOffice, BackOffice, BDD, SEO, Docker, livrables.
+Etat reel des taches, base sur l'implementation actuelle du depot.
 
-## A faire
-- [ ] [FrontOffice] Definir la charte UI (couleurs, typo, composants) et la navigation principale.
-- [ ] [FrontOffice] Implementer les pages publiques: accueil, contexte historique, timeline, contact.
-- [ ] [FrontOffice] Ajouter formulaires avec validations client et messages d'erreur clairs.
-- [ ] [BackOffice] Definir les roles (admin, editeur) et les permissions associees.
-- [ ] [BackOffice] Implementer CRUD complet pour contenus (articles, medias, categories).
-- [ ] [BackOffice] Ajouter journalisation des actions sensibles (connexion, suppression, publication).
-- [ ] [BDD] Finaliser le schema relationnel (utilisateurs, contenus, medias, tags, logs).
-- [ ] [BDD] Ecrire migrations versionnees et script de seed de donnees initiales.
-- [ ] [BDD] Ajouter sauvegarde/restauration documentee et testee.
-- [ ] [SEO] Definir meta title/description par page et balises Open Graph.
-- [ ] [SEO] Generer sitemap.xml et robots.txt coherents avec les routes.
-- [ ] [SEO] Mettre en place URLs propres, canonicals, maillage interne et schema.org minimal.
-- [ ] [Docker] Produire Dockerfile app (prod) + Dockerfile dev (hot reload si utile).
-- [ ] [Docker] Produire docker-compose pour app + web + postgres + volume persistant.
-- [ ] [Docker] Ajouter scripts de demarrage (dev/prod) et verification healthcheck.
-- [ ] [Livrables] Rediger README complet (setup, variables env, commandes, runbook).
-- [ ] [Livrables] Fournir jeu de donnees de demo et comptes de test.
-- [ ] [Livrables] Preparer paquet final: code, dump BDD, doc technique, doc utilisateur.
+## FrontOffice
 
-## En cours
-- [ ] [Pilotage] Transformer le CDC en backlog priorise (MVP puis versions).
-- [ ] [Pilotage] Definir criteres d'acceptation pour chaque fonctionnalite critique.
+- [x] Pages publiques en place: accueil, liste articles, detail article, categorie, a-propos.
+- [x] Navigation front fonctionnelle.
+- [x] Recherche et filtres (categorie, date) sur la liste d'articles.
+- [ ] Fonctions front avancees (contact, timeline, contenus enrichis).
 
-## Fait
-- [x] [Bootstrap] Depot Git initialise.
-- [x] [Bootstrap] Espace de documentation present (.docs/).
-- [x] [Bootstrap] TODO projet cree avec suivi par statut (A faire / En cours / Fait).
+## BackOffice
+
+- [x] Authentification admin (login/logout) avec session.
+- [x] Dashboard admin accessible apres connexion.
+- [x] CRUD articles (create, read, update, delete) + publication/depublication.
+- [x] CRUD categories.
+- [x] CRUD utilisateurs (routes + vues + controleurs).
+- [x] Protection CSRF sur formulaires sensibles.
+- [x] Upload image article.
+- [ ] Journalisation des actions sensibles (audit log).
+- [ ] Gestion de permissions fine (au-dela du role admin/editor actuel).
+
+## BDD
+
+- [x] Schema SQL present dans `db/init.sql` (users, categories, articles).
+- [x] Relations SQL et index principaux en place.
+- [x] Seed initial present (admin + categories).
+- [ ] Migrations versionnees (absentes, script SQL unique actuellement).
+- [ ] Procedure de sauvegarde/restauration documentee et testee.
+
+## SEO
+
+- [x] Meta title et meta description dynamiques sur front.
+- [x] Balises Open Graph de base dans le layout front.
+- [x] URL propres basees sur slug (`/article/{slug}`, `/categorie/{slug}`).
+- [x] URL canonique calculee dans le layout front.
+- [ ] SEO avance: `sitemap.xml`, `robots.txt`, balisage Schema.org.
+
+## Docker
+
+- [x] `Dockerfile` PHP 8.2 Apache present.
+- [x] `docker-compose.yml` present (web + mysql + volumes persistants).
+- [x] Variables d'environnement documentees via `.env.example`.
+- [ ] Healthcheck compose explicite.
+- [ ] Workflow dev/prod separe (profilage ou compose override).
+
+## Documentation et livrables
+
+- [x] README de demarrage Docker mis a jour.
+- [x] Documentation technique (`docs/TECHNICAL.md`) creee.
+- [ ] Captures Lighthouse a produire et integrer dans `docs/lighthouse/`.
+- [ ] Documentation utilisateur finale.

@@ -34,12 +34,7 @@ final class Auth
             return false;
         }
 
-        $status = strtolower((string) ($user['status'] ?? ''));
-        if ($status !== 'active') {
-            return false;
-        }
-
-        $hash = (string) ($user['password_hash'] ?? '');
+        $hash = (string) ($user['password'] ?? '');
         if ($hash === '' || !password_verify($password, $hash)) {
             return false;
         }
@@ -149,7 +144,6 @@ final class Auth
             'username' => (string) ($user['username'] ?? ''),
             'email' => (string) ($user['email'] ?? ''),
             'role' => (string) ($user['role'] ?? ''),
-            'status' => (string) ($user['status'] ?? ''),
         ];
     }
 }

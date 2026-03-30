@@ -8,65 +8,50 @@ $csrfToken = (string) ($csrfToken ?? '');
 $currentUser = is_array($currentUser ?? null) ? $currentUser : [];
 $isAdmin = strtolower((string) ($currentUser['role'] ?? '')) === 'admin';
 
+$h = static fn($value): string => htmlspecialchars((string) $value, ENT_QUOTES, 'UTF-8');
 ?>
-<!doctype html>
-<html lang="fr">
-<head>
-    <meta charset="utf-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>Creer Utilisateur</title>
-    <style>
-        body { font-family: sans-serif; margin: 2rem; max-width: 900px; }
-        label { display: block; margin-top: 0.8rem; }
-        input, select { width: 100%; padding: 0.5rem; }
-        .errors { color: #8a1f11; }
-        .actions { margin-top: 1rem; display: flex; gap: 0.5rem; }
-    </style>
-</head>
-<body>
-    <h1>Creer un utilisateur</h1>
+<style>
+    label { display: block; margin-top: 0.8rem; }
+    input, select { width: 100%; padding: 0.5rem; }
+    .errors { color: #8a1f11; }
+    .actions { margin-top: 1rem; display: flex; gap: 0.5rem; }
+    .btn { display: inline-block; border: 1px solid #333; padding: 8px 12px; border-radius: 6px; background: #fff; color: #111; text-decoration: none; }
+</style>
 
-    <p><a href="/admin/users">Retour a la liste</a></p>
+<h1>Creer un utilisateur</h1>
+<p><a class="btn" href="/admin/users">Retour a la liste</a></p>
 
-    <?php if ($errors !== []): ?>
-        <div class="errors">
-            <ul>
-                <?php foreach ($errors as $error): ?>
-                    <li><?= htmlspecialchars((string) $error, ENT_QUOTES, 'UTF-8') ?></li>
-                <?php endforeach; ?>
-            </ul>
-        </div>
-    <?php endif; ?>
+<?php if ($errors !== []): ?>
+    <div class="errors">
+        <ul>
+            <?php foreach ($errors as $error): ?>
+                <li><?= $h((string) $error) ?></li>
+            <?php endforeach; ?>
+        </ul>
+    </div>
+<?php endif; ?>
 
-    <form method="post" action="/admin/users">
-        <input type="hidden" name="_token" value="<?= htmlspecialchars($csrfToken, ENT_QUOTES, 'UTF-8') ?>">
+<form method="post" action="/admin/users">
+    <input type="hidden" name="_token" value="<?= $h($csrfToken) ?>">
 
-        <label for="username">Username</label>
-        <input id="username" name="username" type="text" required value="<?= htmlspecialchars((string) ($old['username'] ?? ''), ENT_QUOTES, 'UTF-8') ?>">
+    <label for="username">Username</label>
+    <input id="username" name="username" type="text" required value="<?= $h((string) ($old['username'] ?? '')) ?>">
 
-        <label for="email">Email</label>
-        <input id="email" name="email" type="email" required value="<?= htmlspecialchars((string) ($old['email'] ?? ''), ENT_QUOTES, 'UTF-8') ?>">
+    <label for="email">Email</label>
+    <input id="email" name="email" type="email" required value="<?= $h((string) ($old['email'] ?? '')) ?>">
 
-        <label for="password">Mot de passe</label>
-        <input id="password" name="password" type="password" required>
+    <label for="password">Mot de passe</label>
+    <input id="password" name="password" type="password" required>
 
-        <label for="role">Role</label>
-        <select id="role" name="role">
-            <?php if ($isAdmin): ?>
-                <option value="admin" <?= (($old['role'] ?? '') === 'admin') ? 'selected' : '' ?>>admin</option>
-            <?php endif; ?>
-            <option value="editor" <?= (($old['role'] ?? 'editor') === 'editor') ? 'selected' : '' ?>>editor</option>
-        </select>
+    <label for="role">Role</label>
+    <select id="role" name="role">
+        <?php if ($isAdmin): ?>
+            <option value="admin" <?= (($old['role'] ?? '') === 'admin') ? 'selected' : '' ?>>admin</option>
+        <?php endif; ?>
+        <option value="editor" <?= (($old['role'] ?? 'editor') === 'editor') ? 'selected' : '' ?>>editor</option>
+    </select>
 
-        <label for="status">Status</label>
-        <select id="status" name="status">
-            <option value="active" <?= (($old['status'] ?? 'active') === 'active') ? 'selected' : '' ?>>active</option>
-            <option value="disabled" <?= (($old['status'] ?? '') === 'disabled') ? 'selected' : '' ?>>disabled</option>
-        </select>
-
-        <div class="actions">
-            <button type="submit">Enregistrer</button>
-        </div>
-    </form>
-</body>
-</html>
+    <div class="actions">
+        <button type="submit">Enregistrer</button>
+    </div>
+</form>

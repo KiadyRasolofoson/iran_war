@@ -30,7 +30,7 @@ final class UserController
             'flashError' => $this->pullFlash('error'),
             'csrfToken' => $this->auth->token(),
             'currentUser' => $this->auth->user(),
-        ]);
+        ], 'Gestion des utilisateurs');
     }
 
     public function create(): void
@@ -43,11 +43,10 @@ final class UserController
                 'username' => '',
                 'email' => '',
                 'role' => 'editor',
-                'status' => 'active',
             ],
             'csrfToken' => $this->auth->token(),
             'currentUser' => $this->auth->user(),
-        ]);
+        ], 'Creer un utilisateur');
     }
 
     public function store(): void
@@ -75,12 +74,12 @@ final class UserController
                 'old' => $payload,
                 'csrfToken' => $this->auth->token(),
                 'currentUser' => $this->auth->user(),
-            ]);
+            ], 'Creer un utilisateur');
 
             return;
         }
 
-        $payload['password_hash'] = password_hash($password, PASSWORD_DEFAULT);
+        $payload['password'] = password_hash($password, PASSWORD_DEFAULT);
 
         try {
             $this->userModel->create($payload);
@@ -91,7 +90,7 @@ final class UserController
                 'old' => $payload,
                 'csrfToken' => $this->auth->token(),
                 'currentUser' => $this->auth->user(),
-            ]);
+            ], 'Creer un utilisateur');
 
             return;
         }
@@ -116,7 +115,7 @@ final class UserController
             'user' => $user,
             'csrfToken' => $this->auth->token(),
             'currentUser' => $this->auth->user(),
-        ]);
+        ], 'Modifier un utilisateur');
     }
 
     public function update(string $id): void
@@ -151,7 +150,7 @@ final class UserController
                 'user' => array_merge($existingUser, $payload),
                 'csrfToken' => $this->auth->token(),
                 'currentUser' => $this->auth->user(),
-            ]);
+            ], 'Modifier un utilisateur');
 
             return;
         }
@@ -160,11 +159,10 @@ final class UserController
             'username' => $payload['username'],
             'email' => $payload['email'],
             'role' => $payload['role'],
-            'status' => $payload['status'],
         ];
 
         if (trim($password) !== '') {
-            $updateData['password_hash'] = password_hash($password, PASSWORD_DEFAULT);
+            $updateData['password'] = password_hash($password, PASSWORD_DEFAULT);
         }
 
         try {
@@ -176,7 +174,7 @@ final class UserController
                 'user' => array_merge($existingUser, $payload),
                 'csrfToken' => $this->auth->token(),
                 'currentUser' => $this->auth->user(),
-            ]);
+            ], 'Modifier un utilisateur');
 
             return;
         }
@@ -216,7 +214,6 @@ final class UserController
             'username' => trim((string) ($_POST['username'] ?? '')),
             'email' => trim((string) ($_POST['email'] ?? '')),
             'role' => $role,
-            'status' => trim((string) ($_POST['status'] ?? 'active')),
         ];
     }
 
@@ -239,11 +236,6 @@ final class UserController
         $allowedRoles = ['admin', 'editor'];
         if (!in_array((string) $payload['role'], $allowedRoles, true)) {
             $errors[] = 'Le role doit etre admin ou editor.';
-        }
-
-        $allowedStatus = ['active', 'disabled'];
-        if (!in_array((string) $payload['status'], $allowedStatus, true)) {
-            $errors[] = 'Le statut selectionne est invalide.';
         }
 
         if ($isCreate && trim($password) === '') {
@@ -275,10 +267,25 @@ final class UserController
         }
     }
 
-    private function render(string $view, array $data = []): void
+    private function render(string $view, array $data = [], string $title = 'Administration'): void
     {
+        $viewPath = APP_ROOT . '/views/' . $view . '.php';
+        $layoutPath = APP_ROOT . '/views/admin/layout.php';
+
+        if (!is_readable($viewPath) || !is_readable($layoutPath)) {
+            throw new \RuntimeException('View not found: ' . $viewPath);
+        }
+
         extract($data, EXTR_SKIP);
-        require APP_ROOT . '/views/' . $view . '.php';
+        ob_start();
+        require $viewPath;
+        $content = (string) ob_get_clean();
+
+        $showAdminNav = true;
+        $authUser = $this->auth->user();
+        $csrfToken = $this->auth->token();
+
+        require $layoutPath;
     }
 
     private function redirect(string $location): void

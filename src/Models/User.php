@@ -49,15 +49,14 @@ final class User
 
     public function create(array $data): int
     {
-        $sql = 'INSERT INTO users (username, email, password_hash, role, status)
-                VALUES (:username, :email, :password_hash, :role, :status)';
+        $sql = 'INSERT INTO users (username, email, password, role)
+            VALUES (:username, :email, :password, :role)';
 
         $statement = $this->db->prepare($sql);
         $statement->bindValue(':username', (string) ($data['username'] ?? ''));
         $statement->bindValue(':email', (string) ($data['email'] ?? ''));
-        $statement->bindValue(':password_hash', (string) ($data['password_hash'] ?? ''));
-        $statement->bindValue(':role', (string) ($data['role'] ?? 'author'));
-        $statement->bindValue(':status', (string) ($data['status'] ?? 'active'));
+        $statement->bindValue(':password', (string) ($data['password'] ?? ''));
+        $statement->bindValue(':role', (string) ($data['role'] ?? 'editor'));
         $statement->execute();
 
         return (int) $this->db->lastInsertId();
@@ -65,7 +64,7 @@ final class User
 
     public function update(int $id, array $data): bool
     {
-        $allowedFields = ['username', 'email', 'password_hash', 'role', 'status'];
+        $allowedFields = ['username', 'email', 'password', 'role'];
         $setParts = [];
         $params = [':id' => $id];
 

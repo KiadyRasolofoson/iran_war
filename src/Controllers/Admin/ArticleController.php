@@ -52,7 +52,7 @@ final class ArticleController
             $result = $this->articleModel->listPaginated($page, $perPage, $status);
         }
 
-        $this->render('admin/articles/index.php', [
+        $this->render('admin/articles/index', [
             'articles' => $result['items'] ?? [],
             'pagination' => $result['pagination'] ?? [],
             'filters' => [
@@ -63,20 +63,20 @@ final class ArticleController
             'categories' => $this->categoryModel->list(200, 0),
             'csrfToken' => $this->auth->token(),
             'flash' => $this->pullFlash(),
-        ]);
+        ], 'Administration des articles');
     }
 
     public function create(): void
     {
         $old = $this->consumeOldForm();
 
-        $this->render('admin/articles/create.php', [
+        $this->render('admin/articles/create', [
             'categories' => $this->categoryModel->list(200, 0),
             'csrfToken' => $this->auth->token(),
             'errors' => $old['errors'],
             'old' => $old['data'] ?: $this->defaultFormData(),
             'flash' => $this->pullFlash(),
-        ]);
+        ], 'Creer un article');
     }
 
     public function store(): void
@@ -131,14 +131,14 @@ final class ArticleController
         $old = $this->consumeOldForm();
         $formData = $old['data'] ?: $this->mapArticleToFormData($article);
 
-        $this->render('admin/articles/edit.php', [
+        $this->render('admin/articles/edit', [
             'article' => $article,
             'categories' => $this->categoryModel->list(200, 0),
             'csrfToken' => $this->auth->token(),
             'errors' => $old['errors'],
             'old' => $formData,
             'flash' => $this->pullFlash(),
-        ]);
+        ], 'Modifier un article');
     }
 
     public function update($id): void
@@ -492,16 +492,28 @@ final class ArticleController
         return is_array($messages) ? $messages : [];
     }
 
-    private function render(string $view, array $data = []): void
+    private function render(string $view, array $data = [], string $title = 'Administration'): void
     {
         $viewPath = APP_ROOT . '/views/' . ltrim($view, '/');
+        if (!str_ends_with($viewPath, '.php')) {
+            $viewPath .= '.php';
+        }
+        $layoutPath = APP_ROOT . '/views/admin/layout.php';
 
-        if (!is_readable($viewPath)) {
+        if (!is_readable($viewPath) || !is_readable($layoutPath)) {
             throw new \RuntimeException('View not found: ' . $viewPath);
         }
 
         extract($data, EXTR_SKIP);
+        ob_start();
         require $viewPath;
+        $content = (string) ob_get_clean();
+
+        $authUser = $this->auth->user();
+        $showAdminNav = true;
+        $csrfToken = $this->auth->token();
+
+        require $layoutPath;
     }
 
     private function redirect(string $path): void

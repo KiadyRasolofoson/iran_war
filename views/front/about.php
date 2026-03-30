@@ -1,5 +1,4 @@
 <div class="about-page container">
-    <!-- Balise H1 unique pour la page À propos -->
     <h1 class="page-title">À propos de notre Portail d'Information</h1>
     
     <section class="about-content card">

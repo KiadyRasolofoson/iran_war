@@ -11,14 +11,11 @@ CREATE TABLE users (
     id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
     username VARCHAR(50) NOT NULL,
     email VARCHAR(191) NOT NULL,
-    password_hash VARCHAR(255) NOT NULL,
-    role ENUM('admin', 'editor', 'author') NOT NULL DEFAULT 'author',
-    status ENUM('active', 'disabled') NOT NULL DEFAULT 'active',
+    password VARCHAR(255) NOT NULL,
+    role ENUM('admin', 'editor') NOT NULL DEFAULT 'editor',
     created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
     UNIQUE KEY uq_users_username (username),
-    UNIQUE KEY uq_users_email (email),
-    KEY idx_users_status (status)
+    UNIQUE KEY uq_users_email (email)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 CREATE TABLE categories (
@@ -69,19 +66,17 @@ CREATE TABLE articles (
         ON DELETE RESTRICT
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
-INSERT INTO users (username, email, password_hash, role, status)
+INSERT INTO users (username, email, password, role)
 VALUES (
     'admin',
     'admin@example.com',
-    '$2y$12$U658hm1w5fLDfFtEkQR.f.7m4HMKyov07eWvWjw1hZChdBB1vzqji',
-    'admin',
-    'active'
+    '$2y$12$3mmRmuJICOrAHMUiy2jdOuSRFKWQY69KGFgB2DZgGouFfonHnqO86',
+    'admin'
 )
 ON DUPLICATE KEY UPDATE
     email = VALUES(email),
-    password_hash = VALUES(password_hash),
-    role = VALUES(role),
-    status = VALUES(status);
+    password = VALUES(password),
+    role = VALUES(role);
 
 INSERT INTO categories (name, slug, description, seo_title, seo_description, status)
 VALUES

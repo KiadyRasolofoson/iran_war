@@ -25,7 +25,9 @@ $router->get('/a-propos', [PageController::class, 'about']);
 
 // BackOffice auth and dashboard
 $router->get('/login', [AdminAuthController::class, 'showLogin']);
+$router->get('/login/', [AdminAuthController::class, 'showLogin']);
 $router->post('/login', [AdminAuthController::class, 'login']);
+$router->post('/login/', [AdminAuthController::class, 'login']);
 $router->post('/logout', [AdminAuthController::class, 'logout']);
 $router->get('/admin/dashboard', [DashboardController::class, 'index']);
 
