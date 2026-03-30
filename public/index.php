@@ -36,6 +36,7 @@ $router->get('/admin/dashboard', [DashboardController::class, 'index']);
 $router->get('/admin/articles', [AdminArticleController::class, 'index']);
 $router->get('/admin/articles/create', [AdminArticleController::class, 'create']);
 $router->post('/admin/articles', [AdminArticleController::class, 'store']);
+$router->post('/admin/articles/preview', [AdminArticleController::class, 'preview']);
 $router->get('/admin/articles/{id}/edit', [AdminArticleController::class, 'edit']);
 $router->post('/admin/articles/{id}/update', [AdminArticleController::class, 'update']);
 $router->post('/admin/articles/{id}/delete', [AdminArticleController::class, 'delete']);

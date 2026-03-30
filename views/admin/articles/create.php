@@ -7,6 +7,7 @@ $errors = is_array($errors ?? null) ? $errors : [];
 $old = is_array($old ?? null) ? $old : [];
 $flash = is_array($flash ?? null) ? $flash : [];
 $csrfToken = (string) ($csrfToken ?? '');
+$mediaScope = (string) ($mediaScope ?? ($old['media_scope'] ?? ''));
 
 $h = static fn($value): string => htmlspecialchars((string) $value, ENT_QUOTES, 'UTF-8');
 
@@ -33,9 +34,33 @@ $error = static fn(string $key): string => isset($errors[$key]) ? (string) $erro
     .wysiwyg-editor h1, .wysiwyg-editor h2, .wysiwyg-editor h3, .wysiwyg-editor p, .wysiwyg-editor blockquote { margin: 0; }
     .wysiwyg-editor.is-drop-target { background: #f7fbff; box-shadow: inset 0 0 0 2px #1d4ed8; }
     .editor-figure { margin: 1.4em 0; display: block; }
+    .editor-figure { position: relative; }
     .editor-inline-image { max-width: 100%; border-radius: 8px; display: block; margin: 0 auto; }
+    .editor-figure-delete {
+        position: absolute;
+        top: 8px;
+        right: 8px;
+        border: 0;
+        border-radius: 999px;
+        padding: 5px 9px;
+        font-size: 12px;
+        color: #fff;
+        background: rgba(185, 28, 28, 0.9);
+        cursor: pointer;
+    }
+    .editor-figure-delete:hover { background: rgba(153, 27, 27, 0.95); }
     .editor-figcaption { margin-top: 8px; text-align: center; color: #555; font-size: 14px; outline: none; }
     .editor-figcaption:focus { color: #222; }
+    .wysiwyg-editor blockquote,
+    .editor-template-quote {
+        margin: 1rem 0;
+        padding: 12px 14px;
+        border-left: 4px solid #1d4ed8;
+        background: #eff6ff;
+        color: #1e293b;
+        font-style: italic;
+        border-radius: 6px;
+    }
     
     .media-list { display: grid; grid-template-columns: 1fr; gap: 10px; margin-top: 12px; max-height: 340px; overflow-y: auto; }
     .media-item { background: #fff; border-radius: 8px; cursor: pointer; border: 1px solid #ddd; transition: all 0.2s; width: 100%; padding: 8px; text-align: left; display: grid; gap: 8px; }
@@ -67,12 +92,80 @@ $error = static fn(string $key): string => isset($errors[$key]) ? (string) $erro
     .btn.primary:hover { background: #333; border-color: #333; }
     .btn.publish { border-color: #1f6f43; color: #1f6f43; }
     .btn.publish:hover { background: #eef8f1; }
+
+    .wysiwyg-container.is-fullscreen {
+        position: fixed;
+        inset: 0;
+        z-index: 9999;
+        border-radius: 0;
+        border: 0;
+        box-shadow: none;
+        display: flex;
+        flex-direction: column;
+        background: #ffffff;
+    }
+    .editor-fullscreen-active { overflow: hidden; }
+    .wysiwyg-container.is-fullscreen .wysiwyg-toolbar {
+        position: sticky;
+        top: 0;
+        z-index: 2;
+        background: #ffffff;
+    }
+    .wysiwyg-container.is-fullscreen .wysiwyg-editor {
+        flex: 1;
+        min-height: 0;
+        overflow: auto;
+        padding-bottom: 120px;
+    }
+
+    .editor-template { margin: 1.2rem 0; border-radius: 10px; }
+    .editor-template-hero {
+        padding: 20px;
+        color: #f8fafc;
+        background: linear-gradient(135deg, #0f172a, #1d4ed8);
+    }
+    .editor-template-hero h2,
+    .editor-template-hero p {
+        margin: 0;
+        color: inherit;
+    }
+    .editor-template-hero p { margin-top: 0.6rem; }
+    .editor-template-columns {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 14px;
+    }
+    .editor-template-columns > div {
+        padding: 14px;
+        border: 1px solid #d1d5db;
+        border-radius: 8px;
+        background: #f8fafc;
+    }
+    .editor-template-columns h3,
+    .editor-template-columns p {
+        margin: 0;
+    }
+    .editor-template-columns p { margin-top: 0.5rem; }
+    .editor-template blockquote,
+    blockquote.editor-template,
+    .editor-template-quote {
+        margin: 1rem 0;
+        padding: 12px 14px;
+        border-left: 4px solid #1d4ed8;
+        background: #eff6ff;
+        color: #1e293b;
+        font-style: italic;
+    }
+    @media (max-width: 900px) {
+        .editor-template-columns { grid-template-columns: 1fr; }
+    }
 </style>
 
 <div class="page-header">
     <h1 style="margin:0;">Creer un article</h1>
     <div class="actions">
         <a class="btn" href="/admin/articles">Retour a la liste</a>
+        <button type="submit" form="article-form" class="btn" formaction="/admin/articles/preview" formtarget="_blank">Preview</button>
         <button type="submit" form="article-form" class="btn publish" name="submit_action" value="publish_and_view">Publier et voir</button>
         <button type="submit" form="article-form" class="btn primary" data-hook="save-btn">Enregistrer</button>
     </div>
@@ -86,6 +179,7 @@ $error = static fn(string $key): string => isset($errors[$key]) ? (string) $erro
 
 <form id="article-form" method="post" action="/admin/articles" enctype="multipart/form-data">
     <input type="hidden" name="_token" value="<?= $h($csrfToken) ?>">
+    <input type="hidden" name="media_scope" value="<?= $h($mediaScope) ?>">
 
     <div class="editor-layout">
         <!-- Sidebar Media -->
@@ -129,6 +223,13 @@ $error = static fn(string $key): string => isset($errors[$key]) ? (string) $erro
                     <button type="button" class="wysiwyg-btn" data-action="justifyLeft">Gauche</button>
                     <button type="button" class="wysiwyg-btn" data-action="justifyCenter">Centre</button>
                     <button type="button" class="wysiwyg-btn" data-action="justifyRight">Droite</button>
+                    <div style="width:1px; height:24px; background:#ddd; margin:0 4px;"></div>
+                    <span style="font-size:13px; color:#555; margin-right:4px;">Templates:</span>
+                    <button type="button" class="wysiwyg-btn" data-action="insert-template" data-template="hero">Hero</button>
+                    <button type="button" class="wysiwyg-btn" data-action="insert-template" data-template="columns">2 Colonnes</button>
+                    <button type="button" class="wysiwyg-btn" data-action="insert-template" data-template="quote">Citation bloc</button>
+                    <div style="flex-grow:1"></div>
+                    <button type="button" class="wysiwyg-btn" data-action="toggle-fullscreen" title="Plein ecran">&#x26F6;</button>
                 </div>
                 
                 <div style="padding: 24px max(40px, 5%) 0 max(40px, 5%);">

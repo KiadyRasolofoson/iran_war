@@ -379,3 +379,113 @@ p {
 .editor-rich-content .text-right {
     text-align: right;
 }
+
+/* ==========================================================================
+   Article Editor Templates & Fullscreen (Canva-like Premium)
+   ========================================================================== */
+
+/* Fullscreen Editor Mode */
+.editor-fullscreen {
+    position: fixed !important;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    z-index: 9999;
+    background: #fff;
+    display: flex;
+    flex-direction: column;
+    margin: 0 !important;
+    border-radius: 0 !important;
+    box-shadow: none !important;
+}
+
+.editor-fullscreen .wysiwyg-toolbar {
+    position: sticky;
+    top: 0;
+    z-index: 10000;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.05);
+    background: #fdfdfd;
+}
+
+.editor-fullscreen .wysiwyg-editor {
+    flex-grow: 1;
+    overflow-y: auto;
+    padding: 60px max(100px, 15%) !important;
+    font-size: 18px;
+}
+
+/* Blocks & Templates (Front & Editor) */
+.template-hero {
+    background: linear-gradient(135deg, #1a202c, #2d3748);
+    color: #fff;
+    padding: 4rem 2rem;
+    border-radius: 16px;
+    text-align: center;
+    margin: 2rem 0;
+    box-shadow: 0 10px 30px rgba(0,0,0,0.08);
+}
+
+.template-hero h1, .template-hero h2, .template-hero h3 {
+    color: #fff;
+    margin-bottom: 1rem;
+    font-weight: 700;
+    border: none;
+}
+
+.template-hero p {
+    color: #e2e8f0;
+    font-size: 1.15rem;
+    max-width: 800px;
+    margin: 0 auto;
+}
+
+.template-columns {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 2rem;
+    margin: 2rem 0;
+}
+
+.template-column {
+    flex: 1;
+    min-width: 250px;
+    background: #f8fafc;
+    padding: 2rem;
+    border-radius: 16px;
+    border: 1px solid #e2e8f0;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.03);
+    transition: transform 0.2s ease;
+}
+
+.template-column:hover {
+    transform: translateY(-2px);
+    background: #fff;
+    box-shadow: 0 6px 16px rgba(0,0,0,0.05);
+}
+
+/* Premium Quote block */
+.template-quote {
+    position: relative;
+    padding: 2.5rem 3rem 2.5rem 4rem;
+    margin: 2.5rem 0;
+    background: #fff;
+    border-left: 6px solid var(--primary-color);
+    border-radius: 0 16px 16px 0;
+    box-shadow: 0 8px 24px rgba(0,0,0,0.04);
+    font-size: 1.35rem;
+    font-style: italic;
+    color: var(--text-color);
+    line-height: 1.6;
+}
+
+.template-quote::before {
+    content: '\201C';
+    position: absolute;
+    top: 5px;
+    left: 15px;
+    font-size: 5rem;
+    color: rgba(26, 54, 93, 0.08);
+    font-family: var(--font-serif);
+    line-height: 1;
+}

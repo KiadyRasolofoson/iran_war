@@ -11,6 +11,8 @@ use App\Models\Category;
 
 final class ArticleController
 {
+    private const MEDIA_SCOPE_PATTERN = '/\A(?:draft-[a-z0-9]{24}|article-[1-9][0-9]*)\z/';
+
     private Article $articleModel;
     private Category $categoryModel;
     private Auth $auth;
@@ -69,14 +71,65 @@ final class ArticleController
     public function create(): void
     {
         $old = $this->consumeOldForm();
+        $mediaScope = $this->resolveCreateMediaScope(is_array($old['data'] ?? null) ? $old['data'] : []);
+        $formData = $old['data'] ?: $this->defaultFormData();
+        $formData['media_scope'] = $mediaScope;
 
         $this->render('admin/articles/create', [
             'categories' => $this->categoryModel->list(200, 0),
             'csrfToken' => $this->auth->token(),
             'errors' => $old['errors'],
-            'old' => $old['data'] ?: $this->defaultFormData(),
+            'old' => $formData,
+            'mediaScope' => $mediaScope,
             'flash' => $this->pullFlash(),
         ], 'Creer un article');
+    }
+
+    public function preview(): void
+    {
+        $this->assertPostWithCsrf();
+
+        $input = $this->collectInput($_POST);
+        $content = $this->sanitizeContentHtml($input['content']);
+
+        $category = null;
+        $categoryId = (int) $input['category_id'];
+        if ($categoryId > 0) {
+            $category = $this->categoryModel->findById($categoryId);
+        }
+
+        $title = trim($input['title']);
+        if ($title === '') {
+            $title = 'Apercu article';
+        }
+
+        $slug = trim($input['slug']) !== '' ? $this->slugify($input['slug']) : $this->slugify($title);
+        if ($slug === '') {
+            $slug = 'apercu-article';
+        }
+
+        $excerpt = trim($input['excerpt']) !== ''
+            ? trim($input['excerpt'])
+            : mb_substr(strip_tags($content), 0, 180);
+
+        $article = [
+            'id' => 0,
+            'title' => $title,
+            'slug' => $slug,
+            'excerpt' => $excerpt,
+            'content' => $content !== '' ? $content : '<p>Aucun contenu pour cet apercu.</p>',
+            'image' => null,
+            'image_alt' => trim($input['image_alt']) !== '' ? trim($input['image_alt']) : 'Image de couverture',
+            'meta_title' => trim($input['meta_title']) !== '' ? trim($input['meta_title']) : $title,
+            'meta_description' => trim($input['meta_description']) !== '' ? trim($input['meta_description']) : $excerpt,
+            'status' => 'published',
+            'published_at' => date('Y-m-d H:i:s'),
+            'category_id' => $categoryId > 0 ? $categoryId : null,
+            'category_name' => is_array($category) ? (string) ($category['name'] ?? '') : '',
+            'category_slug' => is_array($category) ? (string) ($category['slug'] ?? '') : '',
+        ];
+
+        $this->renderFrontPreview($article);
     }
 
     public function store(): void
@@ -85,6 +138,8 @@ final class ArticleController
         $publishAndView = (string) ($_POST['submit_action'] ?? '') === 'publish_and_view';
 
         $input = $this->collectInput($_POST);
+        $mediaScope = $this->resolveCreateMediaScope($input);
+        $input['media_scope'] = $mediaScope;
         $validation = $this->validateInput($input, null);
 
         if (!empty($validation['errors'])) {
@@ -97,7 +152,7 @@ final class ArticleController
 
         if (isset($_FILES['image']) && is_array($_FILES['image']) && (int) ($_FILES['image']['error'] ?? UPLOAD_ERR_NO_FILE) !== UPLOAD_ERR_NO_FILE) {
             try {
-                $payload['image'] = $this->uploader->upload($_FILES['image'], 'articles');
+                $payload['image'] = $this->uploader->upload($_FILES['image'], 'articles/' . $mediaScope);
             } catch (\Throwable $exception) {
                 $this->storeOldForm(['image' => $exception->getMessage()], $input);
                 $this->flash('error', 'Image upload failed.');
@@ -120,6 +175,28 @@ final class ArticleController
         }
 
         $createdId = $this->articleModel->create($payload);
+        $stableScope = $this->buildArticleMediaScope($createdId);
+
+        if ($this->isDraftMediaScope($mediaScope)) {
+            $migrated = $this->migrateMediaScopeDirectory($mediaScope, $stableScope);
+
+            if ($migrated) {
+                $content = (string) ($payload['content'] ?? '');
+                $image = isset($payload['image']) && is_string($payload['image']) ? $payload['image'] : null;
+
+                $rewrittenContent = $this->rewriteMediaScopePaths($content, $mediaScope, $stableScope);
+                $rewrittenImage = $image !== null
+                    ? $this->rewriteMediaScopePaths($image, $mediaScope, $stableScope)
+                    : null;
+
+                $afterCreatePayload = ['content' => $rewrittenContent];
+                if ($rewrittenImage !== null) {
+                    $afterCreatePayload['image'] = $rewrittenImage;
+                }
+
+                $this->articleModel->update($createdId, $afterCreatePayload);
+            }
+        }
 
         if ($publishAndView) {
             $slug = $this->resolveArticleSlug($createdId, (string) ($payload['slug'] ?? ''));
@@ -146,6 +223,8 @@ final class ArticleController
 
         $old = $this->consumeOldForm();
         $formData = $old['data'] ?: $this->mapArticleToFormData($article);
+        $mediaScope = $this->buildArticleMediaScope($articleId);
+        $formData['media_scope'] = $mediaScope;
 
         $this->render('admin/articles/edit', [
             'article' => $article,
@@ -153,6 +232,7 @@ final class ArticleController
             'csrfToken' => $this->auth->token(),
             'errors' => $old['errors'],
             'old' => $formData,
+            'mediaScope' => $mediaScope,
             'flash' => $this->pullFlash(),
         ], 'Modifier un article');
     }
@@ -170,6 +250,8 @@ final class ArticleController
         }
 
         $input = $this->collectInput($_POST);
+        $mediaScope = $this->sanitizeMediaScope((string) ($input['media_scope'] ?? ''), $articleId);
+        $input['media_scope'] = $mediaScope;
         $validation = $this->validateInput($input, $articleId);
 
         if (!empty($validation['errors'])) {
@@ -186,7 +268,7 @@ final class ArticleController
 
         if (isset($_FILES['image']) && is_array($_FILES['image']) && (int) ($_FILES['image']['error'] ?? UPLOAD_ERR_NO_FILE) !== UPLOAD_ERR_NO_FILE) {
             try {
-                $payload['image'] = $this->uploader->upload($_FILES['image'], 'articles');
+                $payload['image'] = $this->uploader->upload($_FILES['image'], 'articles/' . $mediaScope);
             } catch (\Throwable $exception) {
                 $this->storeOldForm(['image' => $exception->getMessage()], $input);
                 $this->flash('error', 'Image upload failed.');
@@ -286,7 +368,95 @@ final class ArticleController
             'status' => trim((string) ($input['status'] ?? 'draft')),
             'category_id' => trim((string) ($input['category_id'] ?? '')),
             'published_at' => trim((string) ($input['published_at'] ?? '')),
+            'media_scope' => trim((string) ($input['media_scope'] ?? '')),
         ];
+    }
+
+    private function resolveCreateMediaScope(array $input): string
+    {
+        return $this->sanitizeMediaScope((string) ($input['media_scope'] ?? ''), null);
+    }
+
+    private function sanitizeMediaScope(string $scope, ?int $articleId): string
+    {
+        $stableScope = $articleId !== null && $articleId > 0 ? $this->buildArticleMediaScope($articleId) : null;
+
+        $scope = strtolower(trim($scope));
+        if ($scope !== '' && preg_match(self::MEDIA_SCOPE_PATTERN, $scope) === 1) {
+            if ($stableScope !== null) {
+                return $stableScope;
+            }
+
+            return $scope;
+        }
+
+        if ($stableScope !== null) {
+            return $stableScope;
+        }
+
+        return $this->generateDraftMediaScope();
+    }
+
+    private function generateDraftMediaScope(): string
+    {
+        return 'draft-' . bin2hex(random_bytes(12));
+    }
+
+    private function buildArticleMediaScope(int $articleId): string
+    {
+        return 'article-' . max(1, $articleId);
+    }
+
+    private function isDraftMediaScope(string $scope): bool
+    {
+        return str_starts_with($scope, 'draft-');
+    }
+
+    private function migrateMediaScopeDirectory(string $fromScope, string $toScope): bool
+    {
+        $fromScope = strtolower(trim($fromScope));
+        $toScope = strtolower(trim($toScope));
+
+        if ($fromScope === '' || $toScope === '' || $fromScope === $toScope) {
+            return false;
+        }
+
+        if (preg_match(self::MEDIA_SCOPE_PATTERN, $fromScope) !== 1 || preg_match(self::MEDIA_SCOPE_PATTERN, $toScope) !== 1) {
+            return false;
+        }
+
+        $sourceDir = APP_ROOT . '/public/uploads/articles/' . $fromScope;
+        $targetDir = APP_ROOT . '/public/uploads/articles/' . $toScope;
+
+        if (!is_dir($sourceDir) || is_dir($targetDir)) {
+            return false;
+        }
+
+        $parentDir = dirname($targetDir);
+        if (!is_dir($parentDir)) {
+            return false;
+        }
+
+        return rename($sourceDir, $targetDir);
+    }
+
+    private function rewriteMediaScopePaths(string $value, string $fromScope, string $toScope): string
+    {
+        $fromScope = strtolower(trim($fromScope));
+        $toScope = strtolower(trim($toScope));
+
+        if ($value === '' || $fromScope === '' || $toScope === '' || $fromScope === $toScope) {
+            return $value;
+        }
+
+        $fromPath = 'uploads/articles/' . $fromScope . '/';
+        $toPath = 'uploads/articles/' . $toScope . '/';
+
+        return str_replace(
+            ['/' . $fromPath, $fromPath],
+            ['/' . $toPath, $toPath],
+            $value
+        );
     }
 
     private function validateInput(array $input, ?int $articleId): array
@@ -624,9 +794,67 @@ final class ArticleController
             if (!in_array($scheme, $allowedSchemes, true)) {
                 return null;
             }
+
+            if ($isImageSource) {
+                $normalizedLocalPath = $this->normalizeLocalImageUrlToPath($decoded);
+                if ($normalizedLocalPath !== null) {
+                    return $normalizedLocalPath;
+                }
+            }
         }
 
         return $url;
+    }
+
+    private function normalizeLocalImageUrlToPath(string $url): ?string
+    {
+        $host = parse_url($url, PHP_URL_HOST);
+        $path = parse_url($url, PHP_URL_PATH);
+        if (!is_string($host) || !is_string($path) || $path === '') {
+            return null;
+        }
+
+        $normalizedHost = strtolower(trim($host));
+        $localHosts = $this->resolveLocalContentHosts();
+        if (!in_array($normalizedHost, $localHosts, true)) {
+            return null;
+        }
+
+        $query = parse_url($url, PHP_URL_QUERY);
+        $fragment = parse_url($url, PHP_URL_FRAGMENT);
+
+        $result = $path;
+        if (is_string($query) && $query !== '') {
+            $result .= '?' . $query;
+        }
+        if (is_string($fragment) && $fragment !== '') {
+            $result .= '#' . $fragment;
+        }
+
+        return $result;
+    }
+
+    /**
+     * @return array<int, string>
+     */
+    private function resolveLocalContentHosts(): array
+    {
+        $hosts = ['localhost', '127.0.0.1'];
+
+        $appUrlHost = parse_url((string) APP_URL, PHP_URL_HOST);
+        if (is_string($appUrlHost) && $appUrlHost !== '') {
+            $hosts[] = strtolower($appUrlHost);
+        }
+
+        $httpHost = (string) ($_SERVER['HTTP_HOST'] ?? '');
+        if ($httpHost !== '') {
+            $httpHost = strtolower(trim(explode(':', $httpHost)[0] ?? ''));
+            if ($httpHost !== '') {
+                $hosts[] = $httpHost;
+            }
+        }
+
+        return array_values(array_unique($hosts));
     }
 
     private function sanitizeInlineStyle(string $style): string
@@ -823,6 +1051,7 @@ final class ArticleController
             'status' => (string) ($article['status'] ?? 'draft'),
             'category_id' => (string) ($article['category_id'] ?? ''),
             'published_at' => $publishedAt,
+            'media_scope' => '',
         ];
     }
 
@@ -839,6 +1068,7 @@ final class ArticleController
             'status' => 'draft',
             'category_id' => '',
             'published_at' => '',
+            'media_scope' => '',
         ];
     }
 
@@ -934,6 +1164,31 @@ final class ArticleController
         http_response_code(404);
         header('Content-Type: text/plain; charset=UTF-8');
         echo $message;
+        exit;
+    }
+
+    private function renderFrontPreview(array $article): void
+    {
+        $viewPath = APP_ROOT . '/views/front/articles/show.php';
+        $layoutPath = APP_ROOT . '/views/front/layout.php';
+
+        if (!is_readable($viewPath) || !is_readable($layoutPath)) {
+            http_response_code(500);
+            header('Content-Type: text/plain; charset=UTF-8');
+            echo '500 Preview view not found';
+            exit;
+        }
+
+        $relatedArticles = [];
+        $pageTitle = (string) ($article['meta_title'] ?? $article['title'] ?? 'Apercu');
+        $metaDescription = (string) ($article['meta_description'] ?? $article['excerpt'] ?? 'Apercu article');
+        $ogImage = '/assets/images/default-og.jpg';
+
+        ob_start();
+        require $viewPath;
+        $content = (string) ob_get_clean();
+
+        require $layoutPath;
         exit;
     }
 }
