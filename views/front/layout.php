@@ -78,7 +78,6 @@ $canonicalUrl = $scheme . '://' . $host . $uri;
     <link rel="preload" as="image" href="/<?= $escape(ltrim((string)$mainArticle['image'], '/')) ?>" fetchpriority="high">
     <?php endif; ?>
 
-    <!-- Critical CSS inlined for faster FCP -->
     <style>
     :root{--font-serif:'Playfair Display',Georgia,Times,'Times New Roman',serif;--font-body:Georgia,Times,serif;--font-sans:'Inter',system-ui,-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;--accent:#c41e3a;--text-color:#0f0e0c}
     *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
@@ -134,9 +133,16 @@ $canonicalUrl = $scheme . '://' . $host . $uri;
     .lm-category{display:inline-block;font-family:var(--font-sans);font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:1.5px;color:var(--accent);margin-bottom:10px}
     .lm-main-title{font-family:var(--font-serif);font-size:2.4rem;font-weight:700;line-height:1.15;color:#1a1a1a;margin:0 0 15px;letter-spacing:-.5px}
     .lm-main-excerpt{font-family:var(--font-body);font-size:1.1rem;line-height:1.6;color:#4a4a4a;margin:0}
+    .lm-footer-main{background:#000;color:#fff;padding:60px 0 40px;border-top:4px solid var(--accent)}
+    .lm-footer-container{max-width:1200px;margin:0 auto;padding:0 20px}
+    .lm-footer-brand{text-align:center;margin-bottom:50px;padding-bottom:40px;border-bottom:1px solid #333}
+    .lm-footer-logo-text{font-family:var(--font-serif);font-size:2.8rem;font-weight:800;color:#fff;letter-spacing:-.8px;line-height:1}
+    .lm-footer-bottom{background:#000;border-top:1px solid #333;padding:25px 0}
+    .lm-footer-bottom-container{max-width:1200px;margin:0 auto;padding:0 20px;display:flex;justify-content:center;align-items:center}
+    .lm-footer-copyright{font-family:var(--font-sans);font-size:.8rem;color:#999;margin:0;letter-spacing:.5px}
     @media(max-width:860px){.lm-hero-grid{grid-template-columns:1fr}.lm-main-image{height:300px}}
     @media(max-width:900px){.article-detail{padding:3rem 1.25rem}.article-header{margin-bottom:3rem}.article-meta{gap:1rem;padding:1rem}}
-    @media(max-width:768px){.lm-topbar-left,.lm-topbar-right{display:none}.lm-topbar-center{flex:1}.lm-logo-text{font-size:1.8rem}.lm-nav-toggle{display:flex;flex-direction:column;justify-content:center;align-items:center;width:40px;height:40px;background:0 0;border:none;cursor:pointer;padding:8px;gap:5px;position:absolute;right:15px;top:50%;transform:translateY(-50%)}.lm-nav-toggle-bar{width:24px;height:2px;background:#1a1a1a}.lm-nav-list{display:none}.lm-nav-list.is-open{display:flex;position:absolute;top:100%;left:0;right:0;background:#fff;flex-direction:column;border-bottom:3px solid #1a1a1a}.lm-nav-container{position:relative;justify-content:flex-start}}
+    @media(max-width:768px){.lm-topbar-left,.lm-topbar-right{display:none}.lm-topbar-center{flex:1}.lm-logo-text{font-size:1.8rem}.lm-nav{position:relative}.lm-nav-container{position:relative;justify-content:space-between;padding:0 60px 0 20px;min-height:48px}.lm-nav-toggle{display:flex;flex-direction:column;justify-content:center;align-items:center;width:44px;height:44px;background:0 0;border:none;cursor:pointer;padding:10px;gap:5px;position:absolute;right:8px;top:50%;transform:translateY(-50%);z-index:1001}.lm-nav-toggle-bar{width:24px;height:2px;background:#1a1a1a;transition:all .3s ease}.lm-nav-toggle[aria-expanded="true"] .lm-nav-toggle-bar:nth-child(1){transform:rotate(45deg) translate(5px,5px)}.lm-nav-toggle[aria-expanded="true"] .lm-nav-toggle-bar:nth-child(2){opacity:0}.lm-nav-toggle[aria-expanded="true"] .lm-nav-toggle-bar:nth-child(3){transform:rotate(-45deg) translate(6px,-6px)}.lm-nav-list{display:none}.lm-nav-list.is-open{display:flex;position:absolute;top:100%;left:0;right:0;background:#fff;flex-direction:column;border-bottom:3px solid #1a1a1a;box-shadow:0 4px 6px rgba(0,0,0,.1);z-index:1000;max-height:calc(100vh - 200px);overflow-y:auto}.lm-nav-list.is-open .lm-nav-item{width:100%;border-bottom:1px solid #e5e5e5}.lm-nav-list.is-open .lm-nav-item:last-child{border-bottom:none}.lm-nav-list.is-open .lm-nav-link{padding:16px 20px;text-align:left;width:100%}.lm-footer-logo-text{font-size:2rem}}
     </style>
 
     <!-- Load full CSS asynchronously -->
@@ -174,14 +180,10 @@ $canonicalUrl = $scheme . '://' . $host . $uri;
     </script>
 </head>
 <body class="newspaper-layout">
-    <a href="#main-content" class="skip-link">Aller au contenu principal</a>
     
     <!-- Barre supérieure (date) -->
     <div class="lm-topbar" role="contentinfo">
         <div class="lm-topbar-container">
-            <div class="lm-topbar-left">
-                <a href="/login" class="lm-topbar-link" title="Espace rédaction">Espace Rédaction</a>
-            </div>
             <div class="lm-topbar-center">
                 <time class="lm-topbar-date" datetime="<?= date('Y-m-d') ?>"><?php
                     $days = ['lundi', 'mardi', 'mercredi', 'jeudi', 'vendredi', 'samedi', 'dimanche'];
@@ -195,9 +197,6 @@ $canonicalUrl = $scheme . '://' . $host . $uri;
 
                     echo ucfirst($dayName) . ' ' . $day . ' ' . $monthName . ' ' . $year;
                 ?></time>
-            </div>
-            <div class="lm-topbar-right">
-                <a href="/articles" class="lm-topbar-link">Archives</a>
             </div>
         </div>
     </div>
@@ -240,35 +239,58 @@ $canonicalUrl = $scheme . '://' . $host . $uri;
         <?= $content ?>
     </main>
 
-    <footer class="site-footer" role="contentinfo">
-        <div class="container footer-top">
-            <div class="footer-section">
-                <h3>À PROPOS</h3>
-                <p>Le Journal est une publication d'actualités professionnelle dédiée à la couverture complète et rigoureuse du conflit Iran-Irak, avec analyses spécialisées et reportages vérifiés.</p>
-            </div>
-            <div class="footer-section">
-                <h3>CATÉGORIES</h3>
-                <ul>
-                    <?php foreach ($navbarCategories as $footerCategory): ?>
-                        <li>
-                            <a href="/categorie/<?= $escape($footerCategory['slug']) ?>" title="<?= $escape($footerCategory['article_count'] ?? 0) ?> article(s) - <?= $escape($footerCategory['name']) ?>">
-                                <?= $escape($footerCategory['name']) ?>
-                            </a>
-                        </li>
-                    <?php endforeach; ?>
-                </ul>
-            </div>
-            <div class="footer-section">
-                <h3>NAVIGATION</h3>
-                <ul>
-                    <li><a href="/" title="Accueil">Accueil</a></li>
-                    <li><a href="/articles" title="Tous les articles">Articles</a></li>
-                    <li><a href="/a-propos" title="À propos">À Propos</a></li>
-                </ul>
+    <!-- Footer - Style Le Monde noir -->
+    <footer class="lm-footer" role="contentinfo">
+        <!-- Section principale du footer -->
+        <div class="lm-footer-main">
+            <div class="lm-footer-container">
+                <!-- Logo et description centré -->
+                <div class="lm-footer-brand">
+                    <div class="lm-footer-logo">
+                        <span class="lm-footer-logo-text">GUERRE IRAN-IRAK</span>
+                    </div>
+                    <p class="lm-footer-tagline">Couverture complète du conflit</p>
+                    <p class="lm-footer-description">
+                        Publication d'actualités professionnelle dédiée à la couverture complète du conflit Iran-Irak.
+                        Analyses spécialisées, reportages vérifiés et documentation historique de référence.
+                    </p>
+                </div>
+
+                <!-- Sections d'information -->
+                <div class="lm-footer-sections">
+                    <div class="lm-footer-section">
+                        <h3 class="lm-footer-section-title">Archives</h3>
+                        <p class="lm-footer-section-text">
+                            Documentation complète du conflit avec analyses chronologiques et témoignages historiques.
+                        </p>
+                    </div>
+
+                    <div class="lm-footer-section">
+                        <h3 class="lm-footer-section-title">Journalisme</h3>
+                        <p class="lm-footer-section-text">
+                            Couverture professionnelle respectant les standards du journalisme d'investigation international.
+                        </p>
+                    </div>
+
+                    <div class="lm-footer-section">
+                        <h3 class="lm-footer-section-title">Documentation</h3>
+                        <p class="lm-footer-section-text">
+                            Sources vérifiées et analyse factuelle pour une compréhension approfondie des événements.
+                        </p>
+                    </div>
+                </div>
             </div>
         </div>
-        <div class="footer-bottom">
-            <p>&copy; <?= date('Y') ?> Le Journal. Tous droits réservés. | <a href="/mentions-legales">Mentions Légales</a> | <a href="/politique-confidentialite">Politique de Confidentialité</a></p>
+
+        <!-- Footer bottom -->
+        <div class="lm-footer-bottom">
+            <div class="lm-footer-bottom-container">
+                <div class="lm-footer-bottom-center">
+                    <p class="lm-footer-copyright">
+                        &copy; <?= date('Y') ?> Le Journal - Guerre Iran-Irak. Publication d'information historique.
+                    </p>
+                </div>
+            </div>
         </div>
     </footer>
 

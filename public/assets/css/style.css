@@ -468,62 +468,171 @@ img {
    FOOTER
    ========================================================================== */
 
-.site-footer {
-    background-color: var(--primary-dark);
-    color: var(--text-inverse);
-    padding: var(--spacing-3xl) 0 var(--spacing-lg);
-    margin-top: var(--spacing-3xl);
-    font-family: var(--font-sans);
+/* ==========================================================================
+   FOOTER - Style Le Monde noir
+   ========================================================================== */
+
+/* Footer principal - fond noir */
+.lm-footer-main {
+    background: #000000;
+    color: #ffffff;
+    padding: 60px 0 40px;
     border-top: 4px solid var(--accent);
 }
 
-.footer-top {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-    gap: var(--spacing-2xl);
-    margin-bottom: var(--spacing-2xl);
-    padding-bottom: var(--spacing-2xl);
-    border-bottom: 1px solid var(--primary);
+.lm-footer-container {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 0 20px;
 }
 
-.footer-section h3 {
-    color: white;
-    font-size: 0.95rem;
-    text-transform: uppercase;
-    letter-spacing: 1px;
-    margin-bottom: var(--spacing-lg);
-    color: var(--accent);
-}
-
-.footer-section ul {
-    list-style: none;
-}
-
-.footer-section li {
-    margin-bottom: var(--spacing-md);
-}
-
-.footer-section a {
-    color: var(--text-inverse);
-    transition: color 0.2s ease;
-}
-
-.footer-section a:hover {
-    color: var(--accent);
-}
-
-.footer-section p {
-    color: var(--text-inverse);
-    line-height: 1.6;
-    font-size: 0.95rem;
-}
-
-.footer-bottom {
+/* Logo et brand (centré) */
+.lm-footer-brand {
     text-align: center;
-    padding-top: var(--spacing-lg);
-    font-size: 0.85rem;
-    border-top: 1px solid var(--primary);
-    color: var(--text-lighter);
+    margin-bottom: 50px;
+    padding-bottom: 40px;
+    border-bottom: 1px solid #333;
+}
+
+.lm-footer-logo {
+    display: inline-block;
+}
+
+.lm-footer-logo-text {
+    font-family: var(--font-serif);
+    font-size: 2.8rem;
+    font-weight: 800;
+    color: #ffffff;
+    letter-spacing: -0.8px;
+    line-height: 1;
+    display: block;
+}
+
+.lm-footer-tagline {
+    font-family: var(--font-sans);
+    font-size: 0.8rem;
+    color: #cccccc;
+    margin: 15px 0 25px;
+    letter-spacing: 2.5px;
+    text-transform: uppercase;
+    font-weight: 400;
+}
+
+.lm-footer-description {
+    font-family: var(--font-body);
+    font-size: 1rem;
+    color: #cccccc;
+    line-height: 1.7;
+    max-width: 650px;
+    margin: 0 auto;
+}
+
+/* Sections du footer */
+.lm-footer-sections {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+    gap: 40px;
+    margin-bottom: 40px;
+}
+
+.lm-footer-section-title {
+    font-family: var(--font-serif);
+    font-size: 1.3rem;
+    font-weight: 700;
+    color: #ffffff;
+    margin-bottom: 20px;
+    border-bottom: 2px solid var(--accent);
+    padding-bottom: 10px;
+    display: inline-block;
+}
+
+.lm-footer-section-text {
+    font-family: var(--font-body);
+    font-size: 0.95rem;
+    color: #cccccc;
+    line-height: 1.6;
+    margin: 0;
+}
+
+/* Footer bottom */
+.lm-footer-bottom {
+    background: #000000;
+    border-top: 1px solid #333;
+    padding: 25px 0;
+}
+
+.lm-footer-bottom-container {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 0 20px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+.lm-footer-bottom-center {
+    text-align: center;
+}
+
+.lm-footer-copyright {
+    font-family: var(--font-sans);
+    font-size: 0.8rem;
+    color: #999999;
+    margin: 0;
+    letter-spacing: 0.5px;
+}
+
+/* Responsive footer */
+@media (max-width: 768px) {
+    .lm-footer-main {
+        padding: 40px 0 30px;
+    }
+
+    .lm-footer-logo-text {
+        font-size: 2rem;
+    }
+
+    .lm-footer-tagline {
+        font-size: 0.7rem;
+        letter-spacing: 1.5px;
+    }
+
+    .lm-footer-description {
+        font-size: 0.9rem;
+    }
+
+    .lm-footer-sections {
+        grid-template-columns: 1fr;
+        gap: 30px;
+        margin-bottom: 30px;
+    }
+
+    .lm-footer-section-title {
+        font-size: 1.1rem;
+    }
+
+    .lm-footer-bottom {
+        padding: 20px 0;
+    }
+
+    .lm-footer-copyright {
+        font-size: 0.75rem;
+    }
+}
+
+@media (max-width: 480px) {
+    .lm-footer-logo-text {
+        font-size: 1.6rem;
+    }
+
+    .lm-footer-brand {
+        margin-bottom: 35px;
+        padding-bottom: 30px;
+    }
+
+    .lm-footer-description {
+        font-size: 0.85rem;
+    }
 }
 
 /* ==========================================================================
@@ -1294,11 +1403,7 @@ a {
     left: 0;
 }
 
-/* Improve footer readability */
-.footer-section p {
-    font-size: 0.95rem;
-    line-height: 1.8;
-}
+/* Footer: styles supprimés - nouveau design en place */
 
 /* Search filters styling */
 .search-filters {
@@ -1674,6 +1779,7 @@ link[rel="preload"][as="font"] {
         padding: 0 15px;
         justify-content: flex-start;
         position: relative;
+        min-height: 48px;
     }
 
     .lm-nav-toggle {
