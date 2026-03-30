@@ -17,21 +17,23 @@ try {
     $categoryModel = new \App\Models\Category();
     $navbarCategories = $categoryModel->listWithPublishedArticleCount();
 
-    // Si aucune catégorie trouvée, utiliser un fallback
-    if (empty($navbarCategories)) {
-        $navbarCategories = [
-            ['slug' => 'analyses', 'name' => 'Analyses', 'article_count' => 0],
-            ['slug' => 'geopolitique', 'name' => 'Géopolitique', 'article_count' => 0],
-            ['slug' => 'militaire', 'name' => 'Militaire', 'article_count' => 0]
-        ];
-    }
+    // Filtrer les catégories qui ont au moins un article
+    $navbarCategories = array_filter($navbarCategories, function($category) {
+        return isset($category['article_count']) && (int)$category['article_count'] > 0;
+    });
+
+    // Trier par nombre d'articles décroissant
+    usort($navbarCategories, function($a, $b) {
+        $countA = isset($a['article_count']) ? (int)$a['article_count'] : 0;
+        $countB = isset($b['article_count']) ? (int)$b['article_count'] : 0;
+        return $countB - $countA; // Décroissant
+    });
+
+    // Si aucune catégorie trouvée après le filtre, laisser le tableau vide
+    // Pas de fallback avec des catégories à 0 articles
 } catch (Exception $e) {
-    // Fallback en cas d'erreur (connexion DB, etc.)
-    $navbarCategories = [
-        ['slug' => 'analyses', 'name' => 'Analyses', 'article_count' => 0],
-        ['slug' => 'geopolitique', 'name' => 'Géopolitique', 'article_count' => 0],
-        ['slug' => 'militaire', 'name' => 'Militaire', 'article_count' => 0]
-    ];
+    // En cas d'erreur, laisser un tableau vide
+    $navbarCategories = [];
 }
 
 $scheme = (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off') ? 'https' : 'http';
@@ -97,9 +99,11 @@ $canonicalUrl = $scheme . '://' . $host . $uri;
     .lm-logo-text{font-family:var(--font-serif);font-size:3.2rem;font-weight:800;color:#1a1a1a;letter-spacing:-1px;line-height:1;display:block}
     .lm-tagline{font-family:var(--font-sans);font-size:.85rem;color:#666;margin:12px 0 0;letter-spacing:3px;text-transform:uppercase}
     .lm-nav{background:#fff;border-bottom:3px solid #1a1a1a;position:sticky;top:0;z-index:1000}
-    .lm-nav-container{max-width:1200px;margin:0 auto;padding:0 20px;display:flex;justify-content:center;align-items:center}
-    .lm-nav-list{list-style:none;display:flex;justify-content:center;align-items:center;gap:0;margin:0;padding:0}
-    .lm-nav-link{display:block;padding:18px 25px;font-family:var(--font-sans);font-size:.8rem;font-weight:600;color:#1a1a1a;text-decoration:none;text-transform:uppercase;letter-spacing:1px}
+    .lm-nav-container{max-width:1200px;margin:0 auto;padding:0 20px;display:flex;align-items:center;justify-content:center}
+    .lm-nav-list{list-style:none;display:flex;align-items:center;justify-content:center;gap:0;margin:0;padding:0;overflow-x:auto;scrollbar-width:none;-ms-overflow-style:none;scroll-behavior:smooth}
+    .lm-nav-list::-webkit-scrollbar{display:none}
+    .lm-nav-item{flex-shrink:0}
+    .lm-nav-link{display:block;padding:18px 16px;font-family:var(--font-sans);font-size:.75rem;font-weight:600;color:#1a1a1a;text-decoration:none;text-transform:uppercase;letter-spacing:1px;white-space:nowrap}
     .lm-nav-toggle{display:none}
     .site-content{flex:1;padding:0}
     .lm-home{background:#fff;min-height:100vh}
@@ -222,7 +226,7 @@ $canonicalUrl = $scheme . '://' . $host . $uri;
                     <li class="lm-nav-item lm-nav-home"><a href="/" class="lm-nav-link">Accueil</a></li>
                     <?php foreach ($navbarCategories as $navCategory): ?>
                         <li class="lm-nav-item">
-                            <a href="/categorie/<?= $escape($navCategory['slug']) ?>" class="lm-nav-link" title="<?= $escape((string) $navCategory['article_count']) ?> article(s)">
+                            <a href="/categorie/<?= $escape($navCategory['slug']) ?>" class="lm-nav-link" title="<?= $escape($navCategory['article_count'] ?? 0) ?> article(s)">
                                 <?= $escape($navCategory['name']) ?>
                             </a>
                         </li>
@@ -247,7 +251,7 @@ $canonicalUrl = $scheme . '://' . $host . $uri;
                 <ul>
                     <?php foreach ($navbarCategories as $footerCategory): ?>
                         <li>
-                            <a href="/categorie/<?= $escape($footerCategory['slug']) ?>" title="<?= $escape((string) $footerCategory['article_count']) ?> article(s) - <?= $escape($footerCategory['name']) ?>">
+                            <a href="/categorie/<?= $escape($footerCategory['slug']) ?>" title="<?= $escape($footerCategory['article_count'] ?? 0) ?> article(s) - <?= $escape($footerCategory['name']) ?>">
                                 <?= $escape($footerCategory['name']) ?>
                             </a>
                         </li>
@@ -290,14 +294,43 @@ $canonicalUrl = $scheme . '://' . $host . $uri;
 
         // Améliore le scroll horizontal du menu sur desktop
         if (menu && window.innerWidth > 768) {
-            let isScrolling = false;
-
+            // Scroll avec la molette de souris
             menu.addEventListener('wheel', function(e) {
                 if (Math.abs(e.deltaY) > Math.abs(e.deltaX)) {
                     e.preventDefault();
                     this.scrollLeft += e.deltaY;
                 }
             }, { passive: false });
+
+            // Drag to scroll
+            let isDown = false;
+            let startX;
+            let scrollLeft;
+
+            menu.addEventListener('mousedown', function(e) {
+                isDown = true;
+                menu.style.cursor = 'grabbing';
+                startX = e.pageX - menu.offsetLeft;
+                scrollLeft = menu.scrollLeft;
+            });
+
+            menu.addEventListener('mouseleave', function() {
+                isDown = false;
+                menu.style.cursor = 'grab';
+            });
+
+            menu.addEventListener('mouseup', function() {
+                isDown = false;
+                menu.style.cursor = 'grab';
+            });
+
+            menu.addEventListener('mousemove', function(e) {
+                if (!isDown) return;
+                e.preventDefault();
+                const x = e.pageX - menu.offsetLeft;
+                const walk = (x - startX) * 2;
+                menu.scrollLeft = scrollLeft - walk;
+            });
 
             // Scroll fluide avec les touches fléchées
             menu.addEventListener('keydown', function(e) {
@@ -309,6 +342,9 @@ $canonicalUrl = $scheme . '://' . $host . $uri;
                     this.scrollBy({ left: 100, behavior: 'smooth' });
                 }
             });
+
+            // Style du curseur pour indiquer le drag
+            menu.style.cursor = 'grab';
         }
     })();
     </script>
