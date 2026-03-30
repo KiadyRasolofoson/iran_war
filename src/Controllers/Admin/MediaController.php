@@ -24,7 +24,7 @@ final class MediaController
     public function __construct(?Auth $auth = null, ?Uploader $uploader = null)
     {
         $this->auth = $auth ?? new Auth();
-        $this->uploader = $uploader ?? new Uploader();
+        $this->uploader = $uploader ?? new Uploader(null, null, 5242880, true, 800, 450);
         $this->publicRoot = rtrim(APP_ROOT . '/public', '/');
         $this->articlesUploadDirectory = $this->publicRoot . '/uploads/articles';
     }

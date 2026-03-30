@@ -27,7 +27,7 @@ final class ArticleController
         $this->articleModel = $articleModel ?? new Article();
         $this->categoryModel = $categoryModel ?? new Category();
         $this->auth = $auth ?? new Auth();
-        $this->uploader = $uploader ?? new Uploader();
+        $this->uploader = $uploader ?? new Uploader(maxImageWidth: 800, maxImageHeight: 450);
 
         $this->auth->requireLogin();
     }
@@ -112,13 +112,23 @@ final class ArticleController
             ? trim($input['excerpt'])
             : mb_substr(strip_tags($content), 0, 180);
 
+        $imagePath = null;
+        if (isset($_FILES['image']) && is_array($_FILES['image']) && (int) ($_FILES['image']['error'] ?? UPLOAD_ERR_NO_FILE) !== UPLOAD_ERR_NO_FILE) {
+            try {
+                $mediaScope = $this->resolveCreateMediaScope($input);
+                $imagePath = $this->uploader->upload($_FILES['image'], 'articles/' . $mediaScope);
+            } catch (\Throwable $exception) {
+                // Ignore upload errors for preview, just don't show the image
+            }
+        }
+
         $article = [
             'id' => 0,
             'title' => $title,
             'slug' => $slug,
             'excerpt' => $excerpt,
             'content' => $content !== '' ? $content : '<p>Aucun contenu pour cet apercu.</p>',
-            'image' => null,
+            'image' => $imagePath,
             'image_alt' => trim($input['image_alt']) !== '' ? trim($input['image_alt']) : 'Image de couverture',
             'meta_title' => trim($input['meta_title']) !== '' ? trim($input['meta_title']) : $title,
             'meta_description' => trim($input['meta_description']) !== '' ? trim($input['meta_description']) : $excerpt,
@@ -155,7 +165,7 @@ final class ArticleController
                 $payload['image'] = $this->uploader->upload($_FILES['image'], 'articles/' . $mediaScope);
             } catch (\Throwable $exception) {
                 $this->storeOldForm(['image' => $exception->getMessage()], $input);
-                $this->flash('error', 'Image upload failed.');
+                $this->flash('error', $this->buildCreateUploadFlashMessage($exception));
                 $this->redirect('/admin/articles/create');
             }
         }
@@ -970,6 +980,29 @@ final class ArticleController
         }
 
         return null;
+    }
+
+    private function buildCreateUploadFlashMessage(\Throwable $exception): string
+    {
+        $message = strtolower(trim($exception->getMessage()));
+
+        if (str_contains($message, 'size')) {
+            return 'Image upload failed: the file is too large (max 10MB).';
+        }
+
+        if (str_contains($message, 'mime') || str_contains($message, 'extension') || str_contains($message, 'type')) {
+            return 'Image upload failed: unsupported or invalid image format. Allowed: JPG, PNG, WEBP, GIF, AVIF.';
+        }
+
+        if (str_contains($message, 'error code')) {
+            return 'Image upload failed: transfer error, please try again.';
+        }
+
+        if (str_contains($message, 'directory') || str_contains($message, 'writable') || str_contains($message, 'move uploaded file')) {
+            return 'Image upload failed: server storage is temporarily unavailable.';
+        }
+
+        return 'Image upload failed: please verify the image and try again.';
     }
 
     private function buildUniqueSlug(string $baseSlug, ?int $articleId): string

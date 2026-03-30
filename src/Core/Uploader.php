@@ -9,17 +9,18 @@ use RuntimeException;
 
 final class Uploader
 {
-    private const ALLOWED_EXTENSIONS = ['jpg', 'jpeg', 'png', 'webp', 'gif'];
+    private const ALLOWED_EXTENSIONS = ['jpg', 'jpeg', 'png', 'webp', 'gif', 'avif'];
 
     /**
      * @var array<string, array<int, string>>
      */
     private const EXTENSION_MIME_MAP = [
-        'jpg' => ['image/jpeg'],
-        'jpeg' => ['image/jpeg'],
-        'png' => ['image/png'],
-        'webp' => ['image/webp'],
-        'gif' => ['image/gif'],
+        'jpg' => ['image/jpeg', 'image/pjpeg', 'image/jpg'],
+        'jpeg' => ['image/jpeg', 'image/pjpeg', 'image/jpg'],
+        'png' => ['image/png', 'image/x-png', 'image/apng'],
+        'webp' => ['image/webp', 'image/x-webp'],
+        'gif' => ['image/gif', 'image/x-gif'],
+        'avif' => ['image/avif', 'image/avif-sequence', 'image/x-avif'],
     ];
 
     private const BLOCKED_EXTENSIONS = [
@@ -30,12 +31,24 @@ final class Uploader
     private string $uploadRoot;
     private string $publicBase;
     private int $maxBytes;
+    private bool $optimizeImages;
+    private int $maxImageWidth;
+    private int $maxImageHeight;
 
-    public function __construct(?string $uploadRoot = null, ?string $publicBase = null, int $maxBytes = 5242880)
-    {
+    public function __construct(
+        ?string $uploadRoot = null,
+        ?string $publicBase = null,
+        int $maxBytes = 10485760,
+        bool $optimizeImages = true,
+        int $maxImageWidth = 1920,
+        int $maxImageHeight = 1080
+    ) {
         $this->uploadRoot = rtrim($uploadRoot ?? (APP_ROOT . '/public/uploads'), '/');
         $this->publicBase = trim($publicBase ?? 'uploads', '/');
         $this->maxBytes = max(1, $maxBytes);
+        $this->optimizeImages = $optimizeImages && ImageOptimizer::isWebpSupported();
+        $this->maxImageWidth = max(100, $maxImageWidth);
+        $this->maxImageHeight = max(100, $maxImageHeight);
     }
 
     public function upload(array $file, string $subDirectory = 'articles'): string
@@ -110,7 +123,44 @@ final class Uploader
             throw new RuntimeException($message);
         }
 
-        return $this->publicBase . '/' . $safeDir . '/' . $uniqueName;
+        // Optimize image (convert to WebP and resize if needed)
+        $finalPath = $destination;
+        if ($this->optimizeImages && $this->isImageExtension($extension)) {
+            try {
+                $optimizer = new ImageOptimizer(
+                    82,  // WebP quality
+                    70,  // AVIF quality
+                    false, // Don't generate AVIF (less support)
+                    true   // Delete original after conversion
+                );
+                $finalPath = $optimizer->optimizeAndResize(
+                    $destination,
+                    $this->maxImageWidth,
+                    $this->maxImageHeight
+                );
+
+                // Generate only smaller responsive size; original is already capped.
+                $responsiveSizes = [
+                    ['width' => 400, 'height' => 250, 'suffix' => '-sm'],
+                ];
+                $optimizer->generateResponsiveSizes($finalPath, $responsiveSizes);
+            } catch (\Throwable $e) {
+                // If optimization fails, keep the original file
+                $finalPath = $destination;
+            }
+        }
+
+        // Calculate the public path based on the final file
+        $finalFileName = basename($finalPath);
+        return $this->publicBase . '/' . $safeDir . '/' . $finalFileName;
+    }
+
+    /**
+     * Check if an extension is an optimizable image extension.
+     */
+    private function isImageExtension(string $extension): bool
+    {
+        return in_array($extension, ['jpg', 'jpeg', 'png', 'gif'], true);
     }
 
     private function validateUploadArray(array $file): void
@@ -137,7 +187,14 @@ final class Uploader
             throw new RuntimeException('Unable to detect uploaded mime type.');
         }
 
-        return strtolower(trim($mime));
+        $mime = strtolower(trim($mime));
+        $mime = trim((string) explode(';', $mime, 2)[0]);
+
+        if ($mime === '') {
+            throw new RuntimeException('Unable to detect uploaded mime type.');
+        }
+
+        return $mime;
     }
 
     private function assertSafeBinaryContent(string $filePath): void

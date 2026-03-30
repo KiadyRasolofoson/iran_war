@@ -114,4 +114,23 @@ final class Category
 
         return $statement->rowCount() > 0;
     }
+
+    public function listWithPublishedArticleCount(): array
+    {
+        $sql = '
+            SELECT c.*, COUNT(a.id) AS article_count
+            FROM categories c
+            LEFT JOIN articles a ON a.category_id = c.id AND a.status = :status
+            WHERE c.status = :category_status
+            GROUP BY c.id
+            ORDER BY c.name ASC
+        ';
+
+        $statement = $this->db->prepare($sql);
+        $statement->bindValue(':status', 'published');
+        $statement->bindValue(':category_status', 'active');
+        $statement->execute();
+
+        return $statement->fetchAll();
+    }
 }

@@ -13,6 +13,7 @@
     const mediaList = form.querySelector('[data-hook="media-list"]');
     const mediaUploadInput = form.querySelector('[data-hook="inline-media-upload"]');
     const mediaFeedback = form.querySelector('[data-hook="media-feedback"]');
+    const mainImageUpload = form.querySelector('[data-hook="main-image-upload"]');
 
     if (!(editor instanceof HTMLElement) || !(hiddenContent instanceof HTMLTextAreaElement)) {
         return;
@@ -41,6 +42,7 @@
     bindFigureDragMove();
     bindDropZone();
     bindMediaUpload();
+    bindMainImagePreview();
     bindTemplateDelete();
     loadMediaLibrary();
 
@@ -484,6 +486,99 @@
                 setMediaFeedback(message, 'error');
             } finally {
                 mediaUploadInput.value = '';
+            }
+        });
+    }
+
+    function bindMainImagePreview() {
+        if (!(mainImageUpload instanceof HTMLInputElement)) {
+            return;
+        }
+
+        const uploadArea = document.querySelector('label.upload-area[for="image"]');
+        let originalUploadAreaContent = null;
+
+        if (uploadArea instanceof HTMLElement) {
+            originalUploadAreaContent = uploadArea.innerHTML;
+        }
+
+        mainImageUpload.addEventListener('change', () => {
+            const files = mainImageUpload.files;
+            if (!files || files.length === 0) {
+                return;
+            }
+
+            const file = files[0];
+            if (!file.type.startsWith('image/')) {
+                return;
+            }
+
+            const previewUrl = URL.createObjectURL(file);
+
+            if (uploadArea instanceof HTMLElement) {
+                const existingImg = uploadArea.querySelector('.main-image-preview');
+                if (existingImg) {
+                    const oldSrc = existingImg.getAttribute('src');
+                    if (oldSrc && oldSrc.startsWith('blob:')) {
+                        URL.revokeObjectURL(oldSrc);
+                    }
+                    existingImg.setAttribute('src', previewUrl);
+                } else {
+                    uploadArea.innerHTML = '';
+
+                    const previewWrapper = document.createElement('div');
+                    previewWrapper.className = 'main-image-preview-wrapper';
+                    previewWrapper.style.cssText = 'position: relative; display: flex; flex-direction: column; align-items: center; gap: 0.75rem;';
+
+                    const img = document.createElement('img');
+                    img.className = 'main-image-preview';
+                    img.src = previewUrl;
+                    img.alt = 'Aperçu de l\'image';
+                    img.style.cssText = 'max-width: 100%; max-height: 200px; border-radius: 8px; object-fit: contain; border: 1px solid rgba(0, 0, 0, 0.1);';
+
+                    const changeText = document.createElement('span');
+                    changeText.className = 'main-image-change-text';
+                    changeText.textContent = 'Cliquez pour changer l\'image';
+                    changeText.style.cssText = 'font-size: 0.8125rem; color: #666666; font-weight: 500;';
+
+                    previewWrapper.appendChild(img);
+                    previewWrapper.appendChild(changeText);
+                    uploadArea.appendChild(previewWrapper);
+                }
+                return;
+            }
+
+            const formGroup = mainImageUpload.closest('.form-group');
+            if (!formGroup) {
+                return;
+            }
+
+            let previewContainer = formGroup.querySelector('.article-editor-current-image');
+            if (!previewContainer) {
+                previewContainer = document.createElement('div');
+                previewContainer.className = 'article-editor-current-image';
+                formGroup.insertBefore(previewContainer, mainImageUpload);
+            }
+
+            const existingImg = previewContainer.querySelector('.img-preview');
+            if (existingImg) {
+                const oldSrc = existingImg.getAttribute('src');
+                if (oldSrc && oldSrc.startsWith('blob:')) {
+                    URL.revokeObjectURL(oldSrc);
+                }
+                existingImg.setAttribute('src', previewUrl);
+            } else {
+                previewContainer.innerHTML = '';
+                const img = document.createElement('img');
+                img.className = 'img-preview';
+                img.src = previewUrl;
+                img.alt = 'Aperçu de l\'image';
+                previewContainer.appendChild(img);
+            }
+
+            const existingCheckbox = previewContainer.querySelector('input[name="remove_image"]');
+            if (existingCheckbox) {
+                existingCheckbox.checked = false;
             }
         });
     }

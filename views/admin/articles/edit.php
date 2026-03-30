@@ -23,30 +23,138 @@ $articleId = (int) ($article['id'] ?? 0);
 $currentImage = (string) ($article['image'] ?? '');
 ?>
 <style>
-    .article-editor-topbar { display: flex; justify-content: space-between; align-items: center; gap: 0.75rem; flex-wrap: wrap; margin-bottom: 1rem; }
-    .article-editor-actions { display: flex; gap: 0.5rem; flex-wrap: wrap; }
+    /* === Canva-Style Header === */
+    .article-editor-topbar {
+        position: fixed;
+        top: 0;
+        left: 280px;
+        right: 0;
+        height: 64px;
+        background: #FFFFFF;
+        border-bottom: 1px solid rgba(0, 0, 0, 0.08);
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 0 2rem;
+        z-index: 1000;
+        backdrop-filter: blur(8px);
+        box-shadow: 0 1px 0 rgba(0, 0, 0, 0.04);
+    }
+
+    .article-editor-topbar h1 {
+        margin: 0;
+        font-size: 1.125rem;
+        font-weight: 600;
+        color: #1A1A1A;
+    }
+
+    .article-editor-actions {
+        display: flex;
+        gap: 0.625rem;
+        align-items: center;
+    }
+
+    .article-editor-actions .btn {
+        height: 40px;
+        padding: 0 1.25rem;
+        border-radius: 8px;
+        font-size: 0.9375rem;
+        font-weight: 500;
+        transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+        border: none;
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+    }
+
+    .article-editor-actions .btn-outline {
+        background: transparent;
+        color: #1A1A1A;
+        border: 1px solid rgba(0, 0, 0, 0.15);
+    }
+
+    .article-editor-actions .btn-outline:hover {
+        background: rgba(0, 0, 0, 0.04);
+        border-color: rgba(0, 0, 0, 0.2);
+        transform: none;
+        box-shadow: none;
+    }
+
+    .article-editor-actions .btn-primary {
+        background: linear-gradient(135deg, #BC0000 0%, #9A0000 100%);
+        color: #FFFFFF;
+        box-shadow: 0 2px 8px rgba(188, 0, 0, 0.25);
+    }
+
+    .article-editor-actions .btn-primary:hover {
+        box-shadow: 0 4px 12px rgba(188, 0, 0, 0.35);
+        transform: translateY(-1px);
+    }
+
+    /* Content spacing for fixed header */
+    .article-editor-content-wrapper {
+        padding-top: 80px;
+    }
+
+    @media (max-width: 768px) {
+        .article-editor-topbar {
+            left: 0;
+            padding: 0 1rem;
+        }
+        .article-editor-topbar h1 {
+            font-size: 1rem;
+        }
+        .article-editor-actions {
+            gap: 0.5rem;
+        }
+        .article-editor-actions .btn {
+            padding: 0 0.875rem;
+            font-size: 0.875rem;
+        }
+    }
     .article-editor-alert {
         margin-bottom: 1rem;
         border: 1px solid var(--color-border);
         border-left: 4px solid var(--color-accent);
-        border-radius: var(--radius-md);
+        border-radius: 12px;
         background: var(--color-bg-card);
-        padding: 0.75rem 1rem;
+        padding: 1rem 1.25rem;
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
     }
     .article-editor-alert.success { border-left-color: #15803d; }
     .article-editor-alert.error { border-left-color: #b91c1c; }
-    .article-editor-layout { display: grid; grid-template-columns: 320px 1fr; gap: 1rem; }
+
+    .article-editor-layout {
+        display: grid;
+        grid-template-columns: 340px 1fr;
+        gap: 1.5rem;
+    }
     .article-editor-sidebar,
     .article-editor-main { min-width: 0; }
     .article-editor-sidebar .card,
-    .article-editor-main .card { margin-bottom: 0; }
+    .article-editor-main .card {
+        margin-bottom: 0;
+        border-radius: 16px;
+        border: 1px solid rgba(0, 0, 0, 0.08);
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04), 0 0 0 1px rgba(0, 0, 0, 0.02);
+        overflow: hidden;
+    }
 
-    .article-editor-stack { display: grid; gap: 1rem; }
-    .article-editor-divider { height: 1px; background: var(--color-border); margin: 1rem 0; border: 0; }
-    .article-editor-heading { margin: 0 0 0.75rem; font-size: 1rem; font-weight: 600; }
-    .article-editor-subheading { margin: 0 0 0.5rem; font-size: 0.95rem; font-weight: 600; }
-    .article-editor-helper { color: var(--color-text-muted); font-size: 0.875rem; }
-    .article-editor-error { margin-top: 0.375rem; color: #b91c1c; font-size: 0.875rem; }
+    .article-editor-sidebar .card-header,
+    .article-editor-main .card-header {
+        background: linear-gradient(180deg, #FAFAFA 0%, #F5F5F5 100%);
+        border-bottom: 1px solid rgba(0, 0, 0, 0.06);
+        padding: 1.25rem 1.5rem;
+        font-weight: 600;
+        font-size: 1rem;
+    }
+
+    .article-editor-stack { display: grid; gap: 1.5rem; }
+    .article-editor-divider { height: 1px; background: rgba(0, 0, 0, 0.06); margin: 1.5rem 0; border: 0; }
+    .article-editor-heading { margin: 0 0 0.75rem; font-size: 1rem; font-weight: 600; color: #1A1A1A; }
+    .article-editor-subheading { margin: 0 0 0.625rem; font-size: 0.9375rem; font-weight: 600; color: #1A1A1A; }
+    .article-editor-helper { color: #666666; font-size: 0.875rem; line-height: 1.5; }
+    .article-editor-error { margin-top: 0.5rem; color: #b91c1c; font-size: 0.875rem; font-weight: 500; }
     .article-editor-current-image {
         margin-bottom: 0.875rem;
         border: 1px solid var(--color-border);
@@ -62,71 +170,182 @@ $currentImage = (string) ($article['image'] ?? '');
         margin: 0 auto 0.625rem;
     }
 
+    /* === Modern WYSIWYG Toolbar (Canva-style) === */
     .wysiwyg-container {
-        border: 1px solid var(--color-border);
-        border-radius: var(--radius-md);
-        background: var(--color-bg-card);
+        border: 1px solid rgba(0, 0, 0, 0.08);
+        border-radius: 16px;
+        background: #FFFFFF;
         overflow: hidden;
-        box-shadow: var(--shadow-sm);
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
     }
+
     .wysiwyg-toolbar {
-        border-bottom: 1px solid var(--color-border);
-        padding: 0.625rem;
+        border-bottom: 1px solid rgba(0, 0, 0, 0.06);
+        padding: 1rem 1.25rem;
         display: flex;
-        gap: 0.5rem;
+        gap: 0.25rem;
         flex-wrap: wrap;
         align-items: center;
-        background: #fafafa;
+        background: linear-gradient(180deg, #FAFAFA 0%, #F8F8F8 100%);
     }
+
     .wysiwyg-btn {
-        background: var(--color-bg-card);
-        border: 1px solid var(--color-border);
-        border-radius: var(--radius-sm);
-        padding: 0.4rem 0.625rem;
+        background: #FFFFFF;
+        border: 1px solid rgba(0, 0, 0, 0.1);
+        border-radius: 8px;
+        padding: 0.5rem 0.875rem;
         cursor: pointer;
         font-size: 0.875rem;
-        color: var(--color-text-main);
+        color: #1A1A1A;
         line-height: 1.2;
+        font-weight: 500;
+        transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        min-width: 36px;
+        height: 36px;
     }
-    .wysiwyg-btn:hover { border-color: #bdbdbd; background: #f4f4f4; }
-    .wysiwyg-btn.is-active {
-        background: var(--color-text-main);
-        border-color: var(--color-text-main);
-        color: #fff;
-    }
-    .article-editor-toolbar-separator { width: 1px; height: 24px; background: var(--color-border); }
 
-    .article-editor-title-wrap { padding: 1.25rem 1.5rem 0; }
+    .wysiwyg-btn:hover {
+        border-color: rgba(0, 0, 0, 0.18);
+        background: #F5F5F5;
+        transform: translateY(-1px);
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.08);
+    }
+
+    .wysiwyg-btn.is-active {
+        background: linear-gradient(135deg, #BC0000 0%, #9A0000 100%);
+        border-color: #BC0000;
+        color: #FFFFFF;
+        box-shadow: 0 2px 6px rgba(188, 0, 0, 0.3);
+    }
+
+    .wysiwyg-btn.is-active:hover {
+        box-shadow: 0 3px 8px rgba(188, 0, 0, 0.4);
+    }
+
+    .article-editor-toolbar-separator {
+        width: 1px;
+        height: 32px;
+        background: rgba(0, 0, 0, 0.1);
+        margin: 0 0.5rem;
+    }
+
+    .toolbar-group {
+        display: flex;
+        gap: 0.25rem;
+        align-items: center;
+        padding: 0.25rem;
+        background: rgba(0, 0, 0, 0.02);
+        border-radius: 10px;
+    }
+
+    .article-editor-title-wrap { padding: 1.5rem 2rem 0; }
     .article-editor-title {
         width: 100%;
         border: 0;
         border-bottom: 2px solid transparent;
-        padding: 0 0 0.5rem;
+        padding: 0 0 0.75rem;
         margin: 0;
         background: transparent;
-        font-size: clamp(1.75rem, 3vw, 2.2rem);
+        font-size: clamp(1.875rem, 3vw, 2.5rem);
         font-weight: 700;
         line-height: 1.2;
+        color: #1A1A1A;
+        transition: border-color 0.2s;
+        white-space: pre-wrap;
+        word-wrap: break-word;
+        overflow-wrap: break-word;
+        word-break: break-word;
+        resize: none;
+        overflow: hidden;
+        font-family: inherit;
     }
     .article-editor-title:focus-visible {
         outline: none;
-        border-bottom-color: var(--color-accent);
-        box-shadow: 0 2px 0 0 var(--color-focus-ring);
+        border-bottom-color: #BC0000;
+        box-shadow: 0 2px 0 0 rgba(188, 0, 0, 0.1);
     }
+
     .wysiwyg-editor {
-        min-height: 450px;
-        padding: 1.5rem;
+        min-height: 500px;
+        padding: 2rem;
         outline: none;
-        line-height: 1.7;
-        font-size: 1rem;
-        color: var(--color-text-main);
+        line-height: 1.75;
+        font-size: 1.0625rem;
+        color: #1A1A1A;
+        background: #FFFFFF;
+        word-wrap: break-word;
+        overflow-wrap: break-word;
+        word-break: break-word;
     }
     .wysiwyg-editor h1,
     .wysiwyg-editor h2,
     .wysiwyg-editor h3,
     .wysiwyg-editor p,
     .wysiwyg-editor blockquote { margin: 0; }
-    .wysiwyg-editor.is-drop-target { background: #f8fafc; box-shadow: inset 0 0 0 2px #2563eb; }
+    .wysiwyg-editor.is-drop-target {
+        background: linear-gradient(135deg, rgba(188, 0, 0, 0.02) 0%, rgba(188, 0, 0, 0.05) 100%);
+        box-shadow: inset 0 0 0 2px rgba(188, 0, 0, 0.3);
+    }
+
+    /* Form Controls */
+    .form-control {
+        width: 100%;
+        padding: 0.75rem 1rem;
+        border: 2px solid rgba(0, 0, 0, 0.1);
+        border-radius: 10px;
+        background: #FFFFFF;
+        color: #1A1A1A;
+        font-family: inherit;
+        font-size: 0.9375rem;
+        transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+        font-weight: 400;
+    }
+
+    .form-control:hover {
+        border-color: rgba(0, 0, 0, 0.18);
+    }
+
+    .form-control:focus {
+        outline: none;
+        border-color: #BC0000;
+        box-shadow: 0 0 0 4px rgba(188, 0, 0, 0.1);
+        background: #FFFFFF;
+    }
+
+    .form-control:disabled {
+        background-color: #F5F5F5;
+        color: #999999;
+        cursor: not-allowed;
+    }
+
+    select.form-control {
+        appearance: none;
+        background-image: url("data:image/svg+xml,%3Csvg width='12' height='8' viewBox='0 0 12 8' fill='none' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M1 1L6 6L11 1' stroke='%231A1A1A' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+        background-repeat: no-repeat;
+        background-position: right 1rem center;
+        padding-right: 3rem;
+    }
+
+    textarea.form-control {
+        resize: vertical;
+        line-height: 1.6;
+    }
+
+    /* === Modern Image Upload (Canva-style) === */
+    .form-group {
+        margin-bottom: 1.25rem;
+    }
+
+    .form-label {
+        display: block;
+        margin-bottom: 0.625rem;
+        font-weight: 600;
+        font-size: 0.9375rem;
+        color: #1A1A1A;
+    }
 
     .editor-figure { margin: 1.25rem 0; display: block; position: relative; }
     .editor-inline-image { max-width: 100%; border-radius: var(--radius-md); display: block; margin: 0 auto; }
@@ -280,7 +499,7 @@ $currentImage = (string) ($article['image'] ?? '');
 </style>
 
 <div class="article-editor-topbar">
-    <h1 class="mb-1" style="margin: 0;">Modifier l'article #<?= $h($articleId) ?></h1>
+    <h1>Modifier l'article #<?= $h($articleId) ?></h1>
     <div class="article-editor-actions">
         <a class="btn btn-outline" href="/admin/articles">Retour a la liste</a>
         <button type="submit" form="article-form" class="btn btn-outline" formaction="/admin/articles/preview" formtarget="_blank">Preview</button>
@@ -288,6 +507,8 @@ $currentImage = (string) ($article['image'] ?? '');
         <button type="submit" form="article-form" class="btn btn-primary" data-hook="save-btn">Enregistrer</button>
     </div>
 </div>
+
+<div class="article-editor-content-wrapper">
 
 <?php foreach ($flash as $message): ?>
     <div class="article-editor-alert <?= $h((string) ($message['type'] ?? '')) ?>" role="status" aria-live="polite">

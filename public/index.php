@@ -19,6 +19,7 @@ $router = new Router();
 
 // FrontOffice
 $router->get('/', [HomeController::class, 'index']);
+$router->get('/api/articles', [HomeController::class, 'loadMore']);
 $router->get('/articles', [FrontArticleController::class, 'index']);
 $router->get('/article/{slug}', [FrontArticleController::class, 'show']);
 $router->get('/categorie/{slug}', [FrontArticleController::class, 'byCategory']);
