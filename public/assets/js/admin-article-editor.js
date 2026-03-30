@@ -41,6 +41,7 @@
     bindFigureDragMove();
     bindDropZone();
     bindMediaUpload();
+    bindTemplateDelete();
     loadMediaLibrary();
 
     function initializeEditor() {
@@ -51,6 +52,9 @@
         if (editor.innerHTML.trim() === '') {
             editor.innerHTML = '<p><br></p>';
         }
+
+        injectEditorControlStyles();
+        ensureTemplateDeleteControls();
 
         syncHiddenContent();
         refreshToolbarState();
@@ -140,6 +144,7 @@
 
     function bindSync() {
         editor.addEventListener('input', () => {
+            ensureTemplateDeleteControls();
             saveSelection();
             syncHiddenContent();
         });
@@ -238,6 +243,7 @@
             inner.appendChild(title);
             inner.appendChild(paragraph);
             section.appendChild(inner);
+            addTemplateDeleteControl(section);
             return section;
         }
 
@@ -267,6 +273,8 @@
             container.appendChild(leftColumn);
             container.appendChild(rightColumn);
 
+            addTemplateDeleteControl(container);
+
             return container;
         }
 
@@ -276,6 +284,7 @@
             const paragraph = document.createElement('p');
             paragraph.textContent = 'Ajoutez une citation forte.';
             quote.appendChild(paragraph);
+            addTemplateDeleteControl(quote);
             return quote;
         }
 
@@ -283,7 +292,139 @@
     }
 
     function syncHiddenContent() {
-        hiddenContent.value = editor.innerHTML.trim();
+        const cleanHtml = getSanitizedEditorHtml();
+        hiddenContent.value = cleanHtml;
+    }
+
+    function getSanitizedEditorHtml() {
+        const clone = editor.cloneNode(true);
+        if (!(clone instanceof HTMLElement)) {
+            return editor.innerHTML.trim();
+        }
+
+        const helperSelectors = [
+            '[data-editor-helper="true"]',
+            '.editor-figure-delete',
+            '.editor-template-delete',
+        ];
+
+        clone.querySelectorAll(helperSelectors.join(',')).forEach((node) => {
+            node.remove();
+        });
+
+        return clone.innerHTML.trim();
+    }
+
+    function bindTemplateDelete() {
+        editor.addEventListener('click', (event) => {
+            const target = event.target;
+            if (!(target instanceof HTMLElement)) {
+                return;
+            }
+
+            const button = target.closest('button[data-action="delete-template"]');
+            if (!(button instanceof HTMLButtonElement) || !editor.contains(button)) {
+                return;
+            }
+
+            event.preventDefault();
+            event.stopPropagation();
+
+            const template = button.closest('.editor-template-hero, .editor-template-columns, .editor-template-quote');
+            if (!(template instanceof HTMLElement) || !editor.contains(template)) {
+                return;
+            }
+
+            removeTemplateBlock(template);
+        });
+    }
+
+    function ensureTemplateDeleteControls() {
+        const templates = editor.querySelectorAll('.editor-template-hero, .editor-template-columns, .editor-template-quote');
+        templates.forEach((template) => {
+            if (template instanceof HTMLElement) {
+                addTemplateDeleteControl(template);
+            }
+        });
+    }
+
+    function addTemplateDeleteControl(template) {
+        if (!(template instanceof HTMLElement)) {
+            return;
+        }
+
+        if (template.querySelector(':scope > .editor-template-delete')) {
+            return;
+        }
+
+        template.classList.add('editor-template-removable');
+
+        const deleteButton = document.createElement('button');
+        deleteButton.type = 'button';
+        deleteButton.className = 'editor-template-delete';
+        deleteButton.textContent = 'Supprimer';
+        deleteButton.dataset.action = 'delete-template';
+        deleteButton.dataset.editorHelper = 'true';
+        deleteButton.contentEditable = 'false';
+        deleteButton.setAttribute('aria-label', 'Supprimer ce bloc de contenu');
+
+        template.insertBefore(deleteButton, template.firstChild);
+    }
+
+    function removeTemplateBlock(template) {
+        if (!(template instanceof HTMLElement) || !editor.contains(template)) {
+            return;
+        }
+
+        const nextParagraph = document.createElement('p');
+        nextParagraph.appendChild(document.createElement('br'));
+
+        template.insertAdjacentElement('afterend', nextParagraph);
+        template.remove();
+
+        const selection = window.getSelection();
+        if (selection) {
+            const range = document.createRange();
+            range.setStart(nextParagraph, 0);
+            range.collapse(true);
+            selection.removeAllRanges();
+            selection.addRange(range);
+            savedRange = range.cloneRange();
+        }
+
+        editor.focus();
+        syncHiddenContent();
+        refreshToolbarState();
+    }
+
+    function injectEditorControlStyles() {
+        const styleId = 'editor-control-style';
+        if (document.getElementById(styleId)) {
+            return;
+        }
+
+        const style = document.createElement('style');
+        style.id = styleId;
+        style.textContent = [
+            '.editor-template-removable { position: relative; }',
+            '.editor-template-delete {',
+            '  position: absolute;',
+            '  top: 0.5rem;',
+            '  right: 0.5rem;',
+            '  border: 0;',
+            '  border-radius: 999px;',
+            '  padding: 0.3rem 0.55rem;',
+            '  font-size: 0.75rem;',
+            '  line-height: 1;',
+            '  color: #ffffff;',
+            '  background: rgba(185, 28, 28, 0.95);',
+            '  cursor: pointer;',
+            '  z-index: 2;',
+            '}',
+            '.editor-template-delete:hover { background: rgba(153, 27, 27, 0.98); }',
+        ].join('\n');
+
+        document.head.appendChild(style);
     }
 
     function bindDropZone() {
@@ -589,6 +730,7 @@
         deleteButton.className = 'editor-figure-delete';
         deleteButton.textContent = 'Supprimer';
         deleteButton.setAttribute('aria-label', 'Supprimer cette image');
+        deleteButton.dataset.editorHelper = 'true';
         deleteButton.contentEditable = 'false';
 
         deleteButton.addEventListener('click', (event) => {

@@ -39,3 +39,48 @@
     }
   });
 })();
+
+// Submenu management
+(function () {
+  'use strict';
+
+  // Initialize all submenu toggles
+  var submenuToggles = document.querySelectorAll('[data-submenu-toggle]');
+
+  submenuToggles.forEach(function (toggle) {
+    var submenuId = toggle.getAttribute('data-submenu-toggle');
+    var submenu = document.querySelector('[data-submenu="' + submenuId + '"]');
+    var group = toggle.closest('.admin-sidebar-group');
+
+    if (!submenu || !group) {
+      return;
+    }
+
+    // Check if any sublink is active on page load
+    var hasActiveSublink = submenu.querySelector('.admin-sidebar-sublink.active');
+    if (hasActiveSublink) {
+      group.classList.add('open');
+    }
+
+    // Toggle submenu on click
+    toggle.addEventListener('click', function (event) {
+      event.preventDefault();
+
+      var isOpen = group.classList.contains('open');
+
+      // Close all other submenus
+      document.querySelectorAll('.admin-sidebar-group.open').forEach(function (openGroup) {
+        if (openGroup !== group) {
+          openGroup.classList.remove('open');
+        }
+      });
+
+      // Toggle current submenu
+      if (isOpen) {
+        group.classList.remove('open');
+      } else {
+        group.classList.add('open');
+      }
+    });
+  });
+})();
