@@ -1,0 +1,283 @@
+/* ==========================================================================
+   CSS Variables (Theme & Typography)
+   ========================================================================== */
+:root {
+    --primary-color: #1a365d;
+    --secondary-color: #2b6cb0;
+    --accent-color: #e53e3e;
+    --text-color: #2d3748;
+    --text-light: #4a5568;
+    --bg-color: #f7fafc;
+    --card-bg: #ffffff;
+    --border-color: #e2e8f0;
+    --header-bg: #1a202c;
+    --header-text: #f7fafc;
+    
+    --font-sans: 'Segoe UI', system-ui, -apple-system, sans-serif;
+    --font-serif: 'Merriweather', Georgia, serif;
+    
+    --spacing-sm: 0.5rem;
+    --spacing-md: 1rem;
+    --spacing-lg: 2rem;
+    --spacing-xl: 3rem;
+    
+    --border-radius: 8px;
+    --box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05), 0 1px 3px rgba(0, 0, 0, 0.1);
+}
+
+/* ==========================================================================
+   Reset & Base Styles
+   ========================================================================== */
+*, *::before, *::after {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+}
+
+body {
+    font-family: var(--font-sans);
+    color: var(--text-color);
+    background-color: var(--bg-color);
+    background-image: radial-gradient(var(--border-color) 1px, transparent 1px);
+    background-size: 20px 20px;
+    line-height: 1.6;
+    display: flex;
+    flex-direction: column;
+    min-height: 100vh;
+}
+
+h1, h2, h3, h4, h5, h6 {
+    font-family: var(--font-serif);
+    color: var(--primary-color);
+    margin-bottom: var(--spacing-sm);
+    line-height: 1.3;
+}
+
+a {
+    color: var(--secondary-color);
+    text-decoration: none;
+    transition: color 0.3s ease;
+}
+
+a:hover {
+    color: var(--accent-color);
+}
+
+p {
+    margin-bottom: var(--spacing-md);
+}
+
+.container {
+    width: 100%;
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 0 var(--spacing-md);
+}
+
+.card {
+    background-color: var(--card-bg);
+    border-radius: var(--border-radius);
+    box-shadow: var(--box-shadow);
+    padding: var(--spacing-lg);
+    border: 1px solid var(--border-color);
+}
+
+/* ==========================================================================
+   Header & Navigation
+   ========================================================================== */
+.site-header {
+    background-color: var(--header-bg);
+    color: var(--header-text);
+    padding: var(--spacing-md) 0;
+    position: sticky;
+    top: 0;
+    z-index: 100;
+}
+
+.header-container {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.logo a {
+    font-family: var(--font-serif);
+    font-size: 1.5rem;
+    font-weight: bold;
+    color: var(--header-text);
+}
+
+.main-nav ul {
+    list-style: none;
+    display: flex;
+    gap: var(--spacing-lg);
+    align-items: center;
+}
+
+.main-nav a {
+    color: #a0aec0;
+    font-weight: 500;
+}
+
+.main-nav a:hover, .main-nav a:focus {
+    color: var(--header-text);
+}
+
+.nav-btn {
+    background-color: var(--secondary-color);
+    color: white !important;
+    padding: 0.5rem 1rem;
+    border-radius: var(--border-radius);
+}
+
+.nav-btn:hover {
+    background-color: var(--primary-color);
+}
+
+/* ==========================================================================
+   Main Content
+   ========================================================================== */
+.site-content {
+    flex: 1;
+    padding: var(--spacing-xl) 0;
+}
+
+.page-title {
+    font-size: 2.5rem;
+    text-align: center;
+    margin-bottom: var(--spacing-xl);
+    position: relative;
+    padding-bottom: var(--spacing-sm);
+}
+
+.page-title::after {
+    content: '';
+    position: absolute;
+    bottom: 0;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 60px;
+    height: 4px;
+    background-color: var(--accent-color);
+}
+
+/* Home Page */
+.hero-section {
+    margin-bottom: var(--spacing-xl);
+}
+
+.main-article {
+    border-top: 4px solid var(--secondary-color);
+    padding: var(--spacing-xl);
+}
+
+.main-article h2 {
+    font-size: 2rem;
+}
+
+.btn-read-more {
+    display: inline-block;
+    background-color: var(--primary-color);
+    color: white;
+    padding: 0.75rem 1.5rem;
+    border-radius: var(--border-radius);
+    font-weight: bold;
+    margin-top: var(--spacing-md);
+}
+.btn-read-more:hover {
+    background-color: var(--secondary-color);
+    color: white;
+}
+
+.section-title {
+    font-size: 1.75rem;
+    margin-bottom: var(--spacing-lg);
+    border-bottom: 2px solid var(--border-color);
+    padding-bottom: var(--spacing-sm);
+}
+
+.articles-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+    gap: var(--spacing-lg);
+}
+
+.article-card-content h3 {
+    font-size: 1.25rem;
+    margin-bottom: var(--spacing-sm);
+}
+
+.read-more-link {
+    font-weight: bold;
+    display: inline-block;
+    margin-top: var(--spacing-sm);
+}
+
+/* About Page */
+.about-content {
+    max-width: 800px;
+    margin: 0 auto;
+}
+
+.about-content h2 {
+    margin-top: var(--spacing-lg);
+}
+
+/* ==========================================================================
+   Footer
+   ========================================================================== */
+.site-footer {
+    background-color: var(--header-bg);
+    color: #a0aec0;
+    padding: var(--spacing-lg) 0;
+    text-align: center;
+}
+
+.footer-container {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: var(--spacing-md);
+}
+
+.footer-nav ul {
+    list-style: none;
+    display: flex;
+    gap: var(--spacing-md);
+}
+
+.footer-nav a {
+    color: #a0aec0;
+}
+
+.footer-nav a:hover {
+    color: white;
+}
+
+/* ==========================================================================
+   Responsive (Mobile First adaptations handled mostly by flex/grid)
+   ========================================================================== */
+@media (max-width: 768px) {
+    .header-container {
+        flex-direction: column;
+        gap: var(--spacing-md);
+    }
+    
+    .main-nav ul {
+        flex-wrap: wrap;
+        justify-content: center;
+        gap: var(--spacing-md);
+    }
+    
+    .page-title {
+        font-size: 2rem;
+    }
+    
+    .main-article {
+        padding: var(--spacing-md);
+    }
+    
+    .main-article h2 {
+        font-size: 1.5rem;
+    }
+}
