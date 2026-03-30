@@ -9,21 +9,22 @@ $h = static fn($value): string => htmlspecialchars((string) $value, ENT_QUOTES, 
 
 $title = (string) ($article['title'] ?? 'Article');
 $categoryName = trim((string) ($article['category_name'] ?? ''));
+$categorySlug = (string) ($article['category_slug'] ?? '');
+$authorName = trim((string) ($article['author_name'] ?? 'Rédaction'));
+$publishedAt = (string) ($article['published_at'] ?? 'Date inconnue');
+$readingTime = isset($article['content']) ? max(1, (int)ceil(str_word_count(strip_tags((string) $article['content'])) / 200)) : 5;
 
 $resolveImageUrl = static function (?string $rawPath): ?string {
     $path = trim((string) $rawPath);
     if ($path === '') {
         return null;
     }
-
     if (str_starts_with($path, 'http://') || str_starts_with($path, 'https://')) {
         return $path;
     }
-
     if (str_starts_with($path, '/')) {
         return $path;
     }
-
     return '/' . ltrim($path, '/');
 };
 
@@ -33,46 +34,99 @@ if ($imageAlt === '') {
     $imageAlt = 'Image de couverture de l\'article ' . $title;
 }
 ?>
-<div style="max-width:930px;margin:0 auto;padding:22px 16px 44px;">
-    <nav aria-label="Fil d'Ariane article" style="margin-bottom:14px;display:flex;gap:10px;flex-wrap:wrap;">
-        <a href="/articles" style="color:#7c2d12;text-decoration:none;">Tous les articles</a>
-        <?php if ($categoryName !== '' && (string) ($article['category_slug'] ?? '') !== ''): ?>
-            <a href="/categorie/<?= $h((string) ($article['category_slug'] ?? '')) ?>" style="color:#7c2d12;text-decoration:none;">Categorie: <?= $h($categoryName) ?></a>
+
+<article class="article-detail">
+    <!-- Fil d'ariane
+     <nav class="breadcrumb" aria-label="Fil d'Ariane">
+        <a href="/" title="Accueil">Accueil</a> 
+        <span> / </span>
+        <a href="/articles" title="Tous les articles">Articles</a>
+        <?php if ($categoryName !== '' && $categorySlug !== ''): ?>
+            <span> / </span>
+            <a href="/categorie/<?= $h($categorySlug) ?>" title="<?= $h($categoryName) ?>"><?= $h($categoryName) ?></a>
         <?php endif; ?>
-    </nav>
+    </nav> --> 
 
-    <article style="background:#fff;border:1px solid #d6d3d1;border-radius:12px;overflow:hidden;">
-        <?php if ($featuredImage !== null): ?>
-            <img src="<?= $h($featuredImage) ?>" alt="<?= $h($imageAlt) ?>" style="width:100%;max-height:420px;object-fit:cover;background:#e7e5e4;display:block;">
-        <?php else: ?>
-            <div role="img" aria-label="<?= $h($imageAlt) ?>" style="height:220px;background:#e7e5e4;"></div>
-        <?php endif; ?>
-
-        <div style="padding:18px;">
-            <h1 style="margin:0 0 8px;font-size:2.3rem;line-height:1.15;"><?= $h($title) ?></h1>
-            <p style="margin:0 0 16px;color:#6b7280;">
-                Publie le <?= $h((string) ($article['published_at'] ?? 'Date inconnue')) ?>
-                <?php if ($categoryName !== ''): ?>
-                    | Categorie: <a href="/categorie/<?= $h((string) ($article['category_slug'] ?? '')) ?>"><?= $h($categoryName) ?></a>
-                <?php endif; ?>
-            </p>
-
-            <div class="editor-rich-content" style="line-height:1.65;">
-                <?= (string) ($article['content'] ?? '') ?>
+    <!-- Header d'article -->
+    <header class="article-header">
+        <h1><?= $h($title) ?></h1>
+        
+        <!-- Métadonnées -->
+        <div class="article-meta">
+            <div class="article-meta-item" title="Date de publication">
+                <span>📅</span>
+                <time datetime="<?= $h($publishedAt) ?>"><?= $h($publishedAt) ?></time>
             </div>
-
-            <?php if ($relatedArticles !== []): ?>
-                <section aria-label="Articles lies" style="margin-top:20px;border-top:1px dashed #d6d3d1;padding-top:14px;">
-                    <h2 style="margin:0 0 8px;font-size:1.2rem;">Articles lies</h2>
-                    <ul style="margin:0;padding-left:18px;">
-                        <?php foreach ($relatedArticles as $related): ?>
-                            <li>
-                                <a href="/article/<?= $h((string) ($related['slug'] ?? '')) ?>" style="color:#7c2d12;"><?= $h((string) ($related['title'] ?? 'Article')) ?></a>
-                            </li>
-                        <?php endforeach; ?>
-                    </ul>
-                </section>
+            
+            <?php if ($categoryName !== ''): ?>
+                <div class="article-meta-item" title="Catégorie">
+                    <span>📂</span>
+                    <a href="/categorie/<?= $h($categorySlug) ?>" title="Articles de <?= $h($categoryName) ?>"><?= $h($categoryName) ?></a>
+                </div>
             <?php endif; ?>
+            
+            <div class="article-meta-item" title="Temps de lecture estimé">
+                <span>⏱️</span>
+                <span><?= $readingTime ?> min de lecture</span>
+            </div>
+            
+            <div class="article-meta-item" title="Auteur">
+                <span>✍️</span>
+                <span><?= $h($authorName) ?></span>
+            </div>
         </div>
-    </article>
-</div>
+    </header>
+
+    <!-- Image featured -->
+    <?php if ($featuredImage !== null): ?>
+        <figure>
+            <img 
+                src="<?= $h($featuredImage) ?>" 
+                alt="<?= $h($imageAlt) ?>" 
+                width="900"
+                height="500"
+                class="article-detail-image"
+                loading="eager"
+            >
+            <?php if ($imageAlt !== ''): ?>
+                <figcaption><?= $h($imageAlt) ?></figcaption>
+            <?php endif; ?>
+        </figure>
+    <?php endif; ?>
+
+    <!-- Contenu principal -->
+    <div class="article-body editor-rich-content">
+        <?= (string) ($article['content'] ?? '') ?>
+    </div>
+
+    <!-- Articles liés / Connexes -->
+    <?php if ($relatedArticles !== [] && is_countable($relatedArticles) && count($relatedArticles) > 0): ?>
+        <section class="related-articles" aria-label="Articles connexes">
+            <h2>À Lire Aussi</h2>
+            <div class="related-list">
+                <?php foreach ($relatedArticles as $related): ?>
+                    <?php
+                        $relatedTitle = (string) ($related['title'] ?? 'Article');
+                        $relatedSlug = (string) ($related['slug'] ?? '');
+                        $relatedCategory = trim((string) ($related['category_name'] ?? ''));
+                    ?>
+                    <article class="related-item">
+                        <a href="/article/<?= $h($relatedSlug) ?>" title="Lire l'article: <?= $h($relatedTitle) ?>">
+                            <?= $h($relatedTitle) ?>
+                        </a>
+                        <?php if ($relatedCategory !== ''): ?>
+                            <div class="related-category">
+                                <?= $h($relatedCategory) ?>
+                            </div>
+                        <?php endif; ?>
+                    </article>
+                <?php endforeach; ?>
+            </div>
+        </section>
+    <?php endif; ?>
+    
+    <!-- Retour -->
+    <div class="article-return">
+        <a href="/articles" class="btn-read-more" title="Retour à la liste des articles">← Retour aux Articles</a>
+    </div>
+</article>
