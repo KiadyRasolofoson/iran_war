@@ -60,6 +60,7 @@ $canonicalUrl = $scheme . '://' . $host . $uri;
     <!-- Stylesheet -->
     <link rel="stylesheet" href="/assets/css/style.css">
     <link rel="stylesheet" href="/assets/css/article.css">
+    <link rel="stylesheet" href="/assets/css/articles-list.css">
     
     <!-- Schema.org Structured Data -->
     <script type="application/ld+json">
