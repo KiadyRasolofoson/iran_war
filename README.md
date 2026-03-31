@@ -52,9 +52,9 @@ Si la base existe deja, ce script n'est pas rejoue.
 
 ### 5. URLs et acces
 
-- FrontOffice: `http://localhost:8080/`
-- BackOffice login: `http://localhost:8080/login`
-- BackOffice dashboard: `http://localhost:8080/admin/dashboard`
+- FrontOffice: `http://localhost:8083/`
+- BackOffice login: `http://localhost:8083/login`
+- BackOffice dashboard: `http://localhost:8083/admin/dashboard`
 
 Identifiants admin par defaut:
 
@@ -121,8 +121,7 @@ docker compose exec -T db sh -lc 'mysql -u"$MYSQL_USER" -p"$MYSQL_PASSWORD" "$MY
 
 ### URLs utiles
 
-- Articles: `http://localhost:8080/articles`
-- A propos: `http://localhost:8080/a-propos`
-- Back articles: `http://localhost:8080/admin/articles`
-- Back categories: `http://localhost:8080/admin/categories`
-- Back utilisateurs: `http://localhost:8080/admin/users`
+- A propos: `http://localhost:8083/a-propos`
+- Back articles: `http://localhost:8083/admin/articles`
+- Back categories: `http://localhost:8083/admin/categories`
+- Back utilisateurs: `http://localhost:8083/admin/users`
